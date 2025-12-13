@@ -34,3 +34,6 @@ dist-ssr
 .dockerignore
 
 
+ENVIRONMENT_VARIABLES.md
+DEPLOYMENT.md
+QUICK_DEPLOY.md
