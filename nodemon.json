@@ -1,11 +1,9 @@
 {
-  "watch": ["server.js", "config", "routes", "models", "controllers", "middleware"],
+  "watch": ["server.js", "routes", "controllers", "models", "config", "middleware", "utils"],
   "ext": "js,json",
-  "ignore": ["node_modules", "src", "dist"],
+  "ignore": ["node_modules", "src", "dist", "*.test.js"],
   "exec": "node server.js",
   "env": {
     "NODE_ENV": "development"
   }
 }
-
-

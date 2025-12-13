@@ -2,8 +2,13 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-// Base API URL - adjust if your backend is on a different port
-const API_BASE_URL = 'http://localhost:5000/api';
+// Base API URL - uses environment variable in production, localhost in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Log API URL in development for debugging
+if (import.meta.env.DEV) {
+  console.log('🔗 API Base URL:', API_BASE_URL);
+}
 
 /**
  * AuthProvider component that wraps the app and provides authentication context
@@ -92,6 +97,17 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify(userData),
       });
 
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error message
+        try {
+          const errorData = await response.json();
+          return { success: false, message: errorData.message || `Registration failed (${response.status})` };
+        } catch {
+          return { success: false, message: `Registration failed (${response.status}). Please check if the server is running.` };
+        }
+      }
+
       const data = await response.json();
 
       if (data.success && data.token && data.user) {
@@ -106,7 +122,11 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Register error:', error);
-      return { success: false, message: 'Network error. Please try again.' };
+      // More specific error messages
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        return { success: false, message: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' };
+      }
+      return { success: false, message: error.message || 'Network error. Please try again.' };
     }
   };
 
@@ -125,6 +145,17 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify(credentials),
       });
 
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error message
+        try {
+          const errorData = await response.json();
+          return { success: false, message: errorData.message || `Login failed (${response.status})` };
+        } catch {
+          return { success: false, message: `Login failed (${response.status}). Please check if the server is running.` };
+        }
+      }
+
       const data = await response.json();
 
       if (data.success && data.token && data.user) {
@@ -139,7 +170,11 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, message: 'Network error. Please try again.' };
+      // More specific error messages
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        return { success: false, message: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' };
+      }
+      return { success: false, message: error.message || 'Network error. Please try again.' };
     }
   };
 

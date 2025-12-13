@@ -1,176 +1,563 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+import useApi from '../hooks/useApi';
 
-const AITools = () => {
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [generatedIdeas, setGeneratedIdeas] = useState([]);
-
-  const handleGenerateIdeas = async () => {
-    if (!input.trim()) {
-      return;
+const AiTools = () => {
+  // Check for prefilled data from History page
+  const getPrefillData = () => {
+    try {
+      const prefill = localStorage.getItem('aiToolsPrefill');
+      if (prefill) {
+        const data = JSON.parse(prefill);
+        localStorage.removeItem('aiToolsPrefill'); // Clear after reading
+        return data;
+      }
+    } catch (e) {
+      console.error('Error parsing prefill data:', e);
     }
+    return null;
+  };
 
-    setIsLoading(true);
-    
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Mock generated ideas
-      const mockIdeas = [
-        `Idea 1: ${input.substring(0, 50)}...`,
-        `Idea 2: ${input.substring(0, 50)}...`,
-        `Idea 3: ${input.substring(0, 50)}...`,
-      ];
+  const prefillData = getPrefillData();
+  
+  const [activeTab, setActiveTab] = useState(prefillData?.tab || 'ideas');
+  const [results, setResults] = useState([]);
+  const [currentEndpoint, setCurrentEndpoint] = useState(null);
+  
+  // Form states - initialize with prefill data if available
+  const [ideasForm, setIdeasForm] = useState(
+    prefillData?.tab === 'ideas' && prefillData.formData 
+      ? prefillData.formData 
+      : { prompt: '', niche: '', count: 5 }
+  );
+  const [hooksForm, setHooksForm] = useState(
+    prefillData?.tab === 'hooks' && prefillData.formData 
+      ? prefillData.formData 
+      : { topic: '', count: 5 }
+  );
+  const [scriptsForm, setScriptsForm] = useState(
+    prefillData?.tab === 'scripts' && prefillData.formData 
+      ? prefillData.formData 
+      : { topic: '', length: 'medium' }
+  );
+  const [captionsForm, setCaptionsForm] = useState(
+    prefillData?.tab === 'captions' && prefillData.formData 
+      ? prefillData.formData 
+      : { topic: '', tone: 'motivational', count: 3 }
+  );
+  const [hashtagsForm, setHashtagsForm] = useState(
+    prefillData?.tab === 'hashtags' && prefillData.formData 
+      ? prefillData.formData 
+      : { niche: '', count: 15 }
+  );
+
+  // API hooks for each endpoint
+  const ideasApi = useApi('/ai/ideas', { method: 'POST', immediate: false });
+  const hooksApi = useApi('/ai/hooks', { method: 'POST', immediate: false });
+  const scriptsApi = useApi('/ai/scripts', { method: 'POST', immediate: false });
+  const captionsApi = useApi('/ai/captions', { method: 'POST', immediate: false });
+  const hashtagsApi = useApi('/ai/hashtags', { method: 'POST', immediate: false });
+  const projectsApi = useApi('/projects', { method: 'POST', immediate: false });
+
+  // Get the current API hook based on active tab
+  const getCurrentApi = () => {
+    switch (activeTab) {
+      case 'ideas': return ideasApi;
+      case 'hooks': return hooksApi;
+      case 'scripts': return scriptsApi;
+      case 'captions': return captionsApi;
+      case 'hashtags': return hashtagsApi;
+      default: return null;
+    }
+  };
+
+  const currentApi = getCurrentApi();
+  const loading = currentApi?.loading || false;
+
+  // Handle AI generation
+  const handleGenerate = async () => {
+    let body = {};
+    let endpoint = '';
+
+    switch (activeTab) {
+      case 'ideas':
+        if (!ideasForm.prompt || !ideasForm.niche) {
+          toast.error('Please fill in prompt and niche');
+          return;
+        }
+        body = {
+          prompt: ideasForm.prompt,
+          niche: ideasForm.niche,
+          count: parseInt(ideasForm.count) || 5
+        };
+        endpoint = 'ideas';
+        setCurrentEndpoint('ideas');
+        await ideasApi.callApi({ body });
+        break;
       
-      setGeneratedIdeas(mockIdeas);
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      handleGenerateIdeas();
+      case 'hooks':
+        if (!hooksForm.topic) {
+          toast.error('Please fill in topic');
+          return;
+        }
+        body = {
+          topic: hooksForm.topic,
+          count: parseInt(hooksForm.count) || 5
+        };
+        endpoint = 'hooks';
+        setCurrentEndpoint('hooks');
+        await hooksApi.callApi({ body });
+        break;
+      
+      case 'scripts':
+        if (!scriptsForm.topic) {
+          toast.error('Please fill in topic');
+          return;
+        }
+        body = {
+          topic: scriptsForm.topic,
+          length: scriptsForm.length || 'medium'
+        };
+        endpoint = 'scripts';
+        setCurrentEndpoint('scripts');
+        await scriptsApi.callApi({ body });
+        break;
+      
+      case 'captions':
+        if (!captionsForm.topic) {
+          toast.error('Please fill in topic');
+          return;
+        }
+        body = {
+          topic: captionsForm.topic,
+          tone: captionsForm.tone,
+          count: parseInt(captionsForm.count) || 3
+        };
+        endpoint = 'captions';
+        setCurrentEndpoint('captions');
+        await captionsApi.callApi({ body });
+        break;
+      
+      case 'hashtags':
+        if (!hashtagsForm.niche) {
+          toast.error('Please fill in niche');
+          return;
+        }
+        body = {
+          niche: hashtagsForm.niche,
+          count: parseInt(hashtagsForm.count) || 15
+        };
+        endpoint = 'hashtags';
+        setCurrentEndpoint('hashtags');
+        await hashtagsApi.callApi({ body });
+        break;
+      
+      default:
+        return;
     }
   };
+
+  // Show toast when prefilled data is loaded
+  useEffect(() => {
+    if (prefillData) {
+      toast.success('Form prefilled from history!');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update results when API data changes
+  useEffect(() => {
+    const api = getCurrentApi();
+    
+    
+    if (api?.data?.success && api.data.data) {
+      const responseData = api.data.data;
+      let newResults;
+      
+      // For hashtags, wrap the array in another array so all hashtags appear in one card
+      if (currentEndpoint === 'hashtags' && Array.isArray(responseData)) {
+        newResults = [responseData];
+      } else {
+        newResults = Array.isArray(responseData) ? responseData : [responseData];
+      }
+      
+      setResults(newResults);
+      if (newResults.length > 0) {
+        toast.success('AI generated successfully!');
+      }
+    } else if (api?.error) {
+      toast.error(api.error);
+      setResults([]);
+    } else if (api?.data && !api.data.success) {
+      const errorMsg = api.data.message || api.data.error || 'Request failed';
+      toast.error(errorMsg);
+      setResults([]);
+    }
+  }, [ideasApi.data, hooksApi.data, scriptsApi.data, captionsApi.data, hashtagsApi.data, ideasApi.error, hooksApi.error, scriptsApi.error, captionsApi.error, hashtagsApi.error, currentEndpoint]);
+
+  // Save to Planner
+  const saveToPlanner = async (item, index) => {
+    try {
+      let projectData = {
+        status: 'Idea'
+      };
+
+      // Handle different result types based on endpoint
+      switch (currentEndpoint) {
+        case 'ideas':
+          // Ideas are strings
+          projectData.title = `Idea: ${item.substring(0, 50)}${item.length > 50 ? '...' : ''}`;
+          projectData.script = item;
+          break;
+        
+        case 'hooks':
+          // Hooks are strings
+          projectData.title = `Hook: ${item.substring(0, 50)}${item.length > 50 ? '...' : ''}`;
+          projectData.script = item;
+          break;
+        
+        case 'scripts':
+          // Scripts are strings
+          projectData.title = 'AI Generated Script';
+          projectData.script = item;
+          break;
+        
+        case 'captions':
+          // Captions are strings
+          projectData.title = `Caption: ${item.substring(0, 50)}${item.length > 50 ? '...' : ''}`;
+          projectData.captions = [item];
+          break;
+        
+        case 'hashtags':
+          // Hashtags: results array contains one item which is an array of strings
+          projectData.title = 'AI Generated Hashtags';
+          if (Array.isArray(item)) {
+            projectData.hashtags = item;
+          } else {
+            projectData.hashtags = [item];
+          }
+          break;
+        
+        default:
+          // Fallback
+          projectData.title = typeof item === 'string' ? `AI Generated: ${item.substring(0, 50)}` : 'AI Generated';
+          projectData.script = typeof item === 'string' ? item : JSON.stringify(item);
+      }
+
+      const result = await projectsApi.callApi({ body: projectData });
+      
+      if (result.success) {
+        toast.success('Saved to Planner!');
+      } else {
+        toast.error(result.error || 'Failed to save');
+      }
+    } catch (err) {
+      toast.error('Error saving to planner');
+    }
+  };
+
+  // Copy to clipboard
+  const copyToClipboard = (item) => {
+    let textToCopy = '';
+    
+    switch (currentEndpoint) {
+      case 'ideas':
+        // Ideas are strings
+        textToCopy = item;
+        break;
+      case 'hooks':
+        // Hooks are strings
+        textToCopy = item;
+        break;
+      case 'scripts':
+        // Scripts are strings
+        textToCopy = item;
+        break;
+      case 'captions':
+        // Captions are strings
+        textToCopy = item;
+        break;
+      case 'hashtags':
+        // For hashtags, item is an array of strings
+        const hashtags = Array.isArray(item) ? item : [item];
+        textToCopy = hashtags.map(tag => `#${tag}`).join(' ');
+        break;
+      default:
+        textToCopy = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
+    }
+
+    navigator.clipboard.writeText(textToCopy);
+    toast.success('Copied to clipboard!');
+  };
+
+  // Format result for display
+  const formatResult = (item) => {
+    switch (currentEndpoint) {
+      case 'ideas':
+        // Ideas are strings from backend
+        return <p className="text-gray-200 whitespace-pre-wrap">{item}</p>;
+      
+      case 'hooks':
+        // Hooks are strings
+        return <p className="text-gray-200">{item}</p>;
+      
+      case 'scripts':
+        // Scripts are strings
+        return <pre className="text-gray-200 whitespace-pre-wrap text-sm">{item}</pre>;
+      
+      case 'captions':
+        // Captions are strings
+        return <p className="text-gray-200">{item}</p>;
+      
+      case 'hashtags':
+        // For hashtags, the item itself is an array of strings
+        const hashtagArray = Array.isArray(item) ? item : [item];
+        return (
+          <div className="flex flex-wrap gap-2">
+            {hashtagArray.map((tag, idx) => (
+              <span key={idx} className="bg-purple-600 px-3 py-1 rounded-full text-sm text-white">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        );
+      
+      default:
+        return <pre className="whitespace-pre-wrap text-sm">{typeof item === 'string' ? item : JSON.stringify(item, null, 2)}</pre>;
+    }
+  };
+
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            AI Tools
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Generate creative ideas and content using AI assistance
-          </p>
-        </div>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 dark:text-white">AI Tools</h1>
 
-        {/* Input Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 mb-6">
-          <label
-            htmlFor="idea-input"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto">
+        {['ideas', 'hooks', 'scripts', 'captions', 'hashtags'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => {
+              setActiveTab(tab);
+              setResults([]);
+              setCurrentEndpoint(null);
+            }}
+            className={`px-4 py-2 rounded capitalize whitespace-nowrap transition-colors ${
+              activeTab === tab 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
           >
-            Describe what you need ideas for
-          </label>
-          <textarea
-            id="idea-input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="E.g., Content ideas for a tech blog, marketing strategies for a new product, social media post ideas..."
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none transition-colors duration-200"
-            rows={6}
-            disabled={isLoading}
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Ideas Tab */}
+      {activeTab === 'ideas' && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Ideas</h2>
+          <input
+            type="text"
+            placeholder="Prompt (e.g., trending topics)"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={ideasForm.prompt}
+            onChange={e => setIdeasForm({...ideasForm, prompt: e.target.value})}
           />
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Press Ctrl+Enter to generate
-            </p>
-            <button
-              onClick={handleGenerateIdeas}
-              disabled={isLoading || !input.trim()}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
+          <input
+            type="text"
+            placeholder="Niche (e.g., fitness, tech)"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={ideasForm.niche}
+            onChange={e => setIdeasForm({...ideasForm, niche: e.target.value})}
+          />
+          <input
+            type="number"
+            placeholder="Count"
+            min="1"
+            max="20"
+            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={ideasForm.count}
+            onChange={e => setIdeasForm({...ideasForm, count: e.target.value})}
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            {loading ? 'Generating...' : 'Generate Ideas'}
+          </button>
+        </div>
+      )}
+
+      {/* Hooks Tab */}
+      {activeTab === 'hooks' && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Hooks</h2>
+          <input
+            type="text"
+            placeholder="Topic"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={hooksForm.topic}
+            onChange={e => setHooksForm({...hooksForm, topic: e.target.value})}
+          />
+          <input
+            type="number"
+            placeholder="Count"
+            min="1"
+            max="20"
+            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={hooksForm.count}
+            onChange={e => setHooksForm({...hooksForm, count: e.target.value})}
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            {loading ? 'Generating...' : 'Generate Hooks'}
+          </button>
+        </div>
+      )}
+
+      {/* Scripts Tab */}
+      {activeTab === 'scripts' && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Script</h2>
+          <input
+            type="text"
+            placeholder="Topic"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={scriptsForm.topic}
+            onChange={e => setScriptsForm({...scriptsForm, topic: e.target.value})}
+          />
+          <select
+            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+            value={scriptsForm.length}
+            onChange={e => setScriptsForm({...scriptsForm, length: e.target.value})}
+          >
+            <option value="short">Short (200-300 words)</option>
+            <option value="medium">Medium (500-700 words)</option>
+            <option value="long">Long (1000-1500 words)</option>
+          </select>
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            {loading ? 'Generating...' : 'Generate Script'}
+          </button>
+        </div>
+      )}
+
+      {/* Captions Tab */}
+      {activeTab === 'captions' && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Captions</h2>
+          <input
+            type="text"
+            placeholder="Topic"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={captionsForm.topic}
+            onChange={e => setCaptionsForm({...captionsForm, topic: e.target.value})}
+          />
+          <select
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
+            value={captionsForm.tone}
+            onChange={e => setCaptionsForm({...captionsForm, tone: e.target.value})}
+          >
+            <option value="motivational">Motivational</option>
+            <option value="funny">Funny</option>
+            <option value="informative">Informative</option>
+            <option value="engaging">Engaging</option>
+          </select>
+          <input
+            type="number"
+            placeholder="Count"
+            min="1"
+            max="20"
+            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={captionsForm.count}
+            onChange={e => setCaptionsForm({...captionsForm, count: e.target.value})}
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            {loading ? 'Generating...' : 'Generate Captions'}
+          </button>
+        </div>
+      )}
+
+      {/* Hashtags Tab */}
+      {activeTab === 'hashtags' && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
+          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Hashtags</h2>
+          <input
+            type="text"
+            placeholder="Niche"
+            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={hashtagsForm.niche}
+            onChange={e => setHashtagsForm({...hashtagsForm, niche: e.target.value})}
+          />
+          <input
+            type="number"
+            placeholder="Count"
+            min="1"
+            max="50"
+            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
+            value={hashtagsForm.count}
+            onChange={e => setHashtagsForm({...hashtagsForm, count: e.target.value})}
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={loading}
+            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
+          >
+            {loading ? 'Generating...' : 'Generate Hashtags'}
+          </button>
+        </div>
+      )}
+
+      {/* Loading Spinner */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      )}
+
+      {/* Results */}
+      {!loading && results.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold mb-4 dark:text-white">Results</h2>
+          <div className="grid gap-4">
+            {results.map((item, idx) => (
+              <div key={idx} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <div className="mb-4 dark:text-gray-200">
+                  {formatResult(item)}
+                </div>
+                <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => saveToPlanner(item, idx)}
+                    className="bg-green-600 px-4 py-2 rounded font-medium hover:bg-green-700 text-white transition-colors"
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <span>Generate Ideas</span>
-              )}
-            </button>
+                    Save to Planner
+                  </button>
+                  <button
+                    onClick={() => copyToClipboard(item)}
+                    className="bg-blue-600 px-4 py-2 rounded font-medium hover:bg-blue-700 text-white transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-
-        {/* Generated Ideas Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Generated Ideas
-          </h2>
-          
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <svg
-                className="animate-spin h-12 w-12 text-blue-600 dark:text-blue-400 mb-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <p className="text-gray-600 dark:text-gray-400">
-                Generating ideas...
-              </p>
-            </div>
-          ) : generatedIdeas.length > 0 ? (
-            <div className="space-y-4">
-              {generatedIdeas.map((idea, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors duration-200"
-                >
-                  <p className="text-gray-900 dark:text-gray-100">{idea}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-              <p className="text-gray-500 dark:text-gray-400">
-                No ideas generated yet. Enter a description above and click "Generate Ideas" to get started.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default AITools;
-
+export default AiTools;

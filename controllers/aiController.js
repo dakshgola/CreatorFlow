@@ -1,536 +1,257 @@
-import { sendPrompt } from '../utils/geminiClient.js';
-import History from '../models/History.js';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import History from "../models/History.js";
 
-/**
- * Generate content ideas
- * POST /api/ai/ideas
- * 
- * Sample prompt structure:
- * "Generate {count} creative content ideas for a {niche} niche based on this prompt: {prompt}"
- */
+// ❗ Do NOT re-import dotenv here (already loaded in server.js)
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ GEMINI_API_KEY missing in .env");
+}
+
+const genAI = process.env.GEMINI_API_KEY 
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
+
+// ✅ WORKING MODEL - gemini-1.5-flash was shut down, using stable replacement
+const MODEL_NAME = "gemini-2.5-flash";
+
+const getModel = () => {
+  if (!genAI) {
+    throw new Error("Gemini API not configured. Please set GEMINI_API_KEY in .env");
+  }
+  return genAI.getGenerativeModel({ model: MODEL_NAME });
+};
+
+// ---------- helper ----------
+const saveToHistory = async (userId, content) => {
+  try {
+    await History.create({ 
+      userId, 
+      type: 'other', // Valid enum value
+      content: content.substring(0, 2000) // Ensure within maxlength
+    });
+  } catch (err) {
+    // Silently fail - don't break API if history save fails
+    console.error('History save failed:', err.message);
+  }
+};
+
+// ===============================
+// 1️⃣ IDEAS
+// ===============================
 export const generateIdeas = async (req, res) => {
   try {
     const { prompt, niche, count = 5 } = req.body;
-
-    // Validate input
     if (!prompt || !niche) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide prompt and niche',
-      });
+      return res.status(400).json({ success: false, message: "Prompt & niche required" });
     }
 
-    const ideaCount = Math.min(Math.max(1, parseInt(count) || 5), 20); // Limit between 1-20
+    const model = getModel();
+    const result = await model.generateContent(`
+Generate ${count} viral short-form content ideas.
+Niche: ${niche}
+Context: ${prompt}
+Return ONLY numbered list.
+`);
 
-    // Construct prompt for Gemini
-    const geminiPrompt = `Generate ${ideaCount} creative content ideas for a ${niche} niche.
+    const responseText = result.response?.text() || '';
+    const ideas = responseText
+      .split("\n")
+      .filter(line => line.trim() && line.length > 0)
+      .slice(0, count);
 
-User's request: ${prompt}
-
-For each idea, provide:
-1. A catchy title
-2. A brief description (2-3 sentences)
-3. Why it would work for this niche
-
-Format the response as a JSON array with objects containing: title, description, and reason.
-
-Example format:
-[
-  {
-    "title": "Idea Title",
-    "description": "Brief description of the idea",
-    "reason": "Why this works for the niche"
-  }
-]`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.8,
-      maxTokens: 2000,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate ideas',
-        error: result.error,
-      });
+    if (ideas.length === 0) {
+      throw new Error("No ideas generated. Please try again.");
     }
 
-    // Parse ideas from response
-    let ideas = [];
-    if (Array.isArray(result.data)) {
-      ideas = result.data;
-    } else if (result.data.ideas && Array.isArray(result.data.ideas)) {
-      ideas = result.data.ideas;
-    } else if (result.data.text) {
-      // Fallback: try to extract ideas from text
-      ideas = [{ title: 'Generated Idea', description: result.data.text }];
-    }
+    await saveToHistory(req.user.id, `Generated ${ideas.length} ideas for ${niche}: ${prompt}`);
 
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'other',
-        content: `Generated ${ideas.length} content ideas for ${niche} niche`,
-        metadata: {
-          prompt,
-          niche,
-          count: ideas.length,
-        },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-      // Don't fail the request if history save fails
-    }
-
-    res.json({
-      success: true,
-      data: ideas,
-      count: ideas.length,
-    });
-  } catch (error) {
-    console.error('Generate ideas error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while generating ideas',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    res.json({ success: true, data: ideas });
+  } catch (err) {
+    console.error("AI IDEAS ERROR:", err.message);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to generate ideas" 
     });
   }
 };
 
-/**
- * Generate hooks (attention-grabbing openings)
- * POST /api/ai/hooks
- * 
- * Sample prompt structure:
- * "Generate {count} attention-grabbing hooks for content about {topic}"
- */
+// ===============================
+// 2️⃣ HOOKS
+// ===============================
 export const generateHooks = async (req, res) => {
   try {
     const { topic, count = 5 } = req.body;
-
     if (!topic) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide topic',
-      });
+      return res.status(400).json({ success: false, message: "Topic is required" });
+    }
+    
+    const model = getModel();
+    const result = await model.generateContent(`
+Create ${count} viral hooks for: ${topic}
+Return numbered list only.
+`);
+
+    const responseText = result.response?.text() || '';
+    const hooks = responseText
+      .split("\n")
+      .filter(line => line.trim() && line.length > 0)
+      .slice(0, count);
+
+    if (hooks.length === 0) {
+      throw new Error("No hooks generated. Please try again.");
     }
 
-    const hookCount = Math.min(Math.max(1, parseInt(count) || 5), 20);
-
-    const geminiPrompt = `Generate ${hookCount} attention-grabbing hooks (opening lines) for content about: ${topic}
-
-Hooks should be:
-- Engaging and compelling
-- Make viewers want to continue watching/reading
-- Varied in style (question, statement, story, etc.)
-
-Format as a JSON array of strings, each string being one hook.
-
-Example format:
-[
-  "Hook 1 here",
-  "Hook 2 here",
-  "Hook 3 here"
-]`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.9,
-      maxTokens: 1500,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate hooks',
-        error: result.error,
-      });
-    }
-
-    let hooks = [];
-    if (Array.isArray(result.data)) {
-      hooks = result.data;
-    } else if (result.data.hooks && Array.isArray(result.data.hooks)) {
-      hooks = result.data.hooks;
-    } else if (result.data.text) {
-      hooks = [result.data.text];
-    }
-
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'project',
-        content: `Generated ${hooks.length} hooks for topic: ${topic}`,
-        metadata: { topic, count: hooks.length },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-    }
+    await saveToHistory(req.user.id, `Generated ${hooks.length} hooks for: ${topic}`);
 
     res.json({
       success: true,
       data: hooks,
-      count: hooks.length,
     });
-  } catch (error) {
-    console.error('Generate hooks error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while generating hooks',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+  } catch (err) {
+    console.error("AI HOOKS ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to generate hooks" });
   }
 };
 
-/**
- * Generate script
- * POST /api/ai/scripts
- * 
- * Sample prompt structure:
- * "Generate a {length} script about {topic}"
- */
+// ===============================
+// 3️⃣ SCRIPT
+// ===============================
 export const generateScript = async (req, res) => {
   try {
-    const { topic, length = 'medium' } = req.body;
-
+    const { topic } = req.body;
     if (!topic) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide topic',
-      });
+      return res.status(400).json({ success: false, message: "Topic is required" });
+    }
+    
+    const model = getModel();
+    const result = await model.generateContent(`
+Write a short viral video script on:
+${topic}
+Include hook, value, CTA.
+`);
+
+    const script = result.response?.text() || '';
+    
+    if (!script || script.trim().length === 0) {
+      throw new Error("No script generated. Please try again.");
     }
 
-    // Map length to approximate word count
-    const lengthMap = {
-      short: '200-300 words',
-      medium: '500-700 words',
-      long: '1000-1500 words',
-    };
+    await saveToHistory(req.user.id, `Generated script for: ${topic}`);
 
-    const wordCount = lengthMap[length] || lengthMap.medium;
-
-    const geminiPrompt = `Generate a video/content script about: ${topic}
-
-Script length: ${wordCount}
-
-The script should:
-- Have a clear structure (hook, introduction, main content, conclusion)
-- Be engaging and conversational
-- Include natural transitions
-- Be suitable for video or written content
-
-Format the response as a JSON object with:
-{
-  "title": "Script title",
-  "hook": "Opening hook",
-  "introduction": "Introduction paragraph",
-  "mainContent": "Main content (can be multiple paragraphs)",
-  "conclusion": "Conclusion paragraph",
-  "callToAction": "Call to action"
-}`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.7,
-      maxTokens: 3000,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate script',
-        error: result.error,
-      });
-    }
-
-    const script = result.data;
-
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'project',
-        content: `Generated script for topic: ${topic}`,
-        metadata: { topic, length },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-    }
-
-    res.json({
-      success: true,
-      data: script,
-    });
-  } catch (error) {
-    console.error('Generate script error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while generating script',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    res.json({ success: true, data: script });
+  } catch (err) {
+    console.error("AI SCRIPT ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to generate script" });
   }
 };
 
-/**
- * Generate captions
- * POST /api/ai/captions
- * 
- * Sample prompt structure:
- * "Generate {count} social media captions about {topic} with {tone} tone"
- */
+// ===============================
+// 4️⃣ CAPTIONS
+// ===============================
 export const generateCaptions = async (req, res) => {
   try {
-    const { topic, tone = 'engaging', count = 5 } = req.body;
-
+    const { topic, count = 3 } = req.body;
     if (!topic) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide topic',
-      });
+      return res.status(400).json({ success: false, message: "Topic is required" });
+    }
+    
+    const model = getModel();
+    const result = await model.generateContent(`
+Write ${count} engaging Instagram captions for:
+${topic}
+Add emojis.
+Return list only.
+`);
+
+    const responseText = result.response?.text() || '';
+    const captions = responseText
+      .split("\n")
+      .filter(line => line.trim() && line.length > 0)
+      .slice(0, count);
+
+    if (captions.length === 0) {
+      throw new Error("No captions generated. Please try again.");
     }
 
-    const captionCount = Math.min(Math.max(1, parseInt(count) || 5), 20);
-
-    const geminiPrompt = `Generate ${captionCount} social media captions about: ${topic}
-
-Tone: ${tone}
-
-Each caption should:
-- Be engaging and appropriate for social media
-- Include emojis where natural
-- Be between 100-300 characters
-- Match the specified tone
-
-Format as a JSON array of strings.
-
-Example format:
-[
-  "Caption 1 with emojis 📱✨",
-  "Caption 2 with emojis 🎯🔥",
-  "Caption 3 with emojis 💡🌟"
-]`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.8,
-      maxTokens: 2000,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate captions',
-        error: result.error,
-      });
-    }
-
-    let captions = [];
-    if (Array.isArray(result.data)) {
-      captions = result.data;
-    } else if (result.data.captions && Array.isArray(result.data.captions)) {
-      captions = result.data.captions;
-    } else if (result.data.text) {
-      captions = [result.data.text];
-    }
-
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'project',
-        content: `Generated ${captions.length} captions for topic: ${topic}`,
-        metadata: { topic, tone, count: captions.length },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-    }
+    await saveToHistory(req.user.id, `Generated ${captions.length} captions for: ${topic}`);
 
     res.json({
       success: true,
       data: captions,
-      count: captions.length,
     });
-  } catch (error) {
-    console.error('Generate captions error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while generating captions',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+  } catch (err) {
+    console.error("AI CAPTIONS ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to generate captions" });
   }
 };
 
-/**
- * Generate hashtags
- * POST /api/ai/hashtags
- * 
- * Sample prompt structure:
- * "Generate {count} relevant hashtags for {niche} niche"
- */
+// ===============================
+// 5️⃣ HASHTAGS
+// ===============================
 export const generateHashtags = async (req, res) => {
   try {
     const { niche, count = 10 } = req.body;
-
     if (!niche) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide niche',
-      });
+      return res.status(400).json({ success: false, message: "Niche is required" });
+    }
+    
+    const model = getModel();
+    const result = await model.generateContent(`
+Generate ${count} trending hashtags for ${niche}.
+Return space-separated hashtags.
+`);
+
+    const responseText = result.response?.text() || '';
+    const hashtags = responseText
+      .split(/\s+/)
+      .filter(tag => tag.trim() && tag.length > 0 && !tag.startsWith('#'))
+      .map(tag => tag.replace(/^#/, '').trim())
+      .filter(tag => tag.length > 0)
+      .slice(0, count);
+
+    if (hashtags.length === 0) {
+      throw new Error("No hashtags generated. Please try again.");
     }
 
-    const hashtagCount = Math.min(Math.max(1, parseInt(count) || 10), 50);
-
-    const geminiPrompt = `Generate ${hashtagCount} relevant and trending hashtags for the ${niche} niche.
-
-Hashtags should:
-- Be relevant to the niche
-- Include a mix of popular and niche-specific tags
-- Be suitable for Instagram, TikTok, Twitter, etc.
-- Not include the # symbol (just the text)
-
-Format as a JSON array of strings.
-
-Example format:
-[
-  "hashtag1",
-  "hashtag2",
-  "hashtag3"
-]`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.7,
-      maxTokens: 1000,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to generate hashtags',
-        error: result.error,
-      });
-    }
-
-    let hashtags = [];
-    if (Array.isArray(result.data)) {
-      hashtags = result.data;
-    } else if (result.data.hashtags && Array.isArray(result.data.hashtags)) {
-      hashtags = result.data.hashtags;
-    } else if (result.data.text) {
-      hashtags = result.data.text.split(',').map(tag => tag.trim());
-    }
-
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'project',
-        content: `Generated ${hashtags.length} hashtags for ${niche} niche`,
-        metadata: { niche, count: hashtags.length },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-    }
+    await saveToHistory(req.user.id, `Generated ${hashtags.length} hashtags for: ${niche}`);
 
     res.json({
       success: true,
       data: hashtags,
-      count: hashtags.length,
     });
-  } catch (error) {
-    console.error('Generate hashtags error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while generating hashtags',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+  } catch (err) {
+    console.error("AI HASHTAGS ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to generate hashtags" });
   }
 };
 
-/**
- * Improve existing script
- * POST /api/ai/improve
- * 
- * Sample prompt structure:
- * "Improve this script: {script}"
- */
+// ===============================
+// 6️⃣ IMPROVE SCRIPT
+// ===============================
 export const improveScript = async (req, res) => {
   try {
     const { script } = req.body;
-
     if (!script || typeof script !== 'string' || script.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide a script to improve',
-      });
+      return res.status(400).json({ success: false, message: "Script is required" });
     }
-
-    const geminiPrompt = `Improve the following script. Make it more engaging, clear, and effective while maintaining the original message and style.
-
-Original script:
+    
+    const model = getModel();
+    const result = await model.generateContent(`
+Improve this script to be more viral:
 ${script}
+`);
 
-Provide the improved version with:
-1. Enhanced hook (if applicable)
-2. Better flow and transitions
-3. More engaging language
-4. Clearer structure
-5. Stronger conclusion/call to action
-
-Format as a JSON object with:
-{
-  "improvedScript": "The improved script text",
-  "changes": ["List of key improvements made"],
-  "suggestions": ["Additional suggestions for the script"]
-}`;
-
-    const result = await sendPrompt(geminiPrompt, {
-      temperature: 0.7,
-      maxTokens: 4000,
-      responseFormat: 'json',
-    });
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to improve script',
-        error: result.error,
-      });
+    const improved = result.response?.text() || '';
+    
+    if (!improved || improved.trim().length === 0) {
+      throw new Error("No improved script generated. Please try again.");
     }
 
-    const improved = result.data;
+    await saveToHistory(req.user.id, "Improved script using AI");
 
-    // Save to history
-    try {
-      await History.create({
-        userId: req.user.id,
-        type: 'project',
-        content: 'Improved script using AI',
-        metadata: {
-          originalLength: script.length,
-          improvedLength: improved.improvedScript?.length || 0,
-        },
-      });
-    } catch (historyError) {
-      console.error('Failed to save to history:', historyError);
-    }
-
-    res.json({
-      success: true,
-      data: improved,
-    });
-  } catch (error) {
-    console.error('Improve script error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while improving script',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    res.json({ success: true, data: improved });
+  } catch (err) {
+    console.error("AI IMPROVE ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to improve script" });
   }
 };
-
-

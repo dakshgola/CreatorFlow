@@ -101,4 +101,7 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
+// Default export for backward compatibility (if any files use default import)
+export default { protect, optionalAuth };
+
 

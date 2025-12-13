@@ -10,6 +10,11 @@ import Dashboard from './pages/Dashboard';
 import AITools from './pages/AITools';
 import Clients from './pages/Clients';
 import Tasks from './pages/Tasks';
+import Planner from './pages/Planner';
+import Payments from './pages/Payments';
+import History from './pages/History';
+import Settings from './pages/Settings';
+import Analytics from './pages/Analytics';
 
 function App() {
   // Initialize dark mode - the hook handles adding/removing 'dark' class
@@ -82,10 +87,50 @@ function App() {
               }
             />
             <Route
+              path="/planner"
+              element={
+                <ProtectedRoute>
+                  <Planner />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/tasks"
               element={
                 <ProtectedRoute>
                   <Tasks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute>
+                  <Payments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
                 </ProtectedRoute>
               }
             />
@@ -97,4 +142,3 @@ function App() {
 }
 
 export default App;
-

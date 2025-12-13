@@ -24,7 +24,15 @@ const initializeCloudinary = () => {
 
   // Verify configuration
   const config = cloudinary.config();
-  if (!config.cloud_name || !config.api_key || !config.api_secret) {
+  // Check if config values are empty strings or undefined
+  const hasValidConfig = config.cloud_name && 
+                        config.cloud_name.trim() !== '' && 
+                        config.api_key && 
+                        config.api_key.trim() !== '' && 
+                        config.api_secret && 
+                        config.api_secret.trim() !== '';
+  
+  if (!hasValidConfig) {
     console.warn('Warning: Cloudinary configuration is incomplete. Media uploads may not work.');
     console.warn('Please set CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET');
   } else {

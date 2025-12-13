@@ -1,8 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// ❗ Do NOT re-import dotenv here (already loaded in server.js)
 
 // Initialize Gemini client
 let genAI;
@@ -15,7 +13,7 @@ try {
     console.warn('Warning: GEMINI_API_KEY not found in environment variables');
   } else {
     genAI = new GoogleGenerativeAI(apiKey);
-    model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     console.log('Gemini client initialized successfully');
   }
 } catch (error) {
