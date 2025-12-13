@@ -149,3 +149,4 @@ The model is now explicitly set to `gemini-1.5-flash-002` (stable version) with 
 **Next Step**: Restart the backend server and test the API endpoint.
 
 
+

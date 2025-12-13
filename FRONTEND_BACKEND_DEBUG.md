@@ -155,3 +155,4 @@ node -e "require('dotenv').config(); console.log('GEMINI_API_KEY:', process.env.
 Run the app and check console logs to identify the exact failure point!
 
 
+

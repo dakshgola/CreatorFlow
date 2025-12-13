@@ -164,3 +164,4 @@ https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:
 The model name is now explicitly set to `gemini-1.5-flash-latest` with validation to prevent any corruption. If the error persists, it may be an SDK issue that requires updating the package.
 
 
+

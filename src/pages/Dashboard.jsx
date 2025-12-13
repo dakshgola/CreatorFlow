@@ -1,40 +1,57 @@
+import { useAuth } from '../context/AuthContext';
+
 const Dashboard = () => {
+  const { user } = useAuth();
+
+  // Time-based greeting with Indian touch
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Namaste, Good morning';
+    if (hour >= 12 && hour < 17) return 'Namaste, Good afternoon';
+    if (hour >= 17 && hour < 22) return 'Namaste, Good evening';
+    return 'Namaste, Working late';
+  };
+
+  const greeting = getTimeBasedGreeting();
+  const userName = user?.name || 'Creator';
+  const emoji = new Date().getHours() >= 22 || new Date().getHours() < 5 ? '🌙' : '👋';
+
   // Dummy data for summary cards
   const summaryData = {
-    totalClients: 24,
+    totalClients: 12,
     pendingTasks: 8,
-    paymentsDue: 12500,
+    paymentsDue: 2450,
+    engagement: 24.5,
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-slate-950 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Message */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, <span className="text-blue-600 dark:text-blue-400">John Doe</span>
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Here's what's happening with your business today.
+          <p className="text-sm text-slate-400">
+            {greeting}, {userName} {emoji}. Here's what's happening today.
           </p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Clients Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] transition-all duration-200 ease-out">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                  Total Clients
-                </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-sm font-semibold text-white mb-1">Brand Clients</p>
+                <p className="text-3xl font-bold text-white mt-2">
                   {summaryData.totalClients}
                 </p>
+                <p className="text-xs text-slate-400 mt-1">+2 from last month</p>
               </div>
-              <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-3">
+              <div className="bg-indigo-500/20 rounded-full p-3">
                 <svg
-                  className="h-8 w-8 text-blue-600 dark:text-blue-400"
+                  className="h-8 w-8 text-indigo-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -51,19 +68,18 @@ const Dashboard = () => {
           </div>
 
           {/* Pending Tasks Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] transition-all duration-200 ease-out">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                  Pending Tasks
-                </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                <p className="text-sm font-semibold text-white mb-1">Pending Tasks</p>
+                <p className="text-3xl font-bold text-white mt-2">
                   {summaryData.pendingTasks}
                 </p>
+                <p className="text-xs text-slate-400 mt-1">3 due today</p>
               </div>
-              <div className="bg-yellow-100 dark:bg-yellow-900 rounded-full p-3">
+              <div className="bg-yellow-500/20 rounded-full p-3">
                 <svg
-                  className="h-8 w-8 text-yellow-600 dark:text-yellow-400"
+                  className="h-8 w-8 text-yellow-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -80,19 +96,18 @@ const Dashboard = () => {
           </div>
 
           {/* Payments Due Card */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] transition-all duration-200 ease-out">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                  Payments Due
+                <p className="text-sm font-semibold text-white mb-1">Pending Payments</p>
+                <p className="text-3xl font-bold text-white mt-2">
+                  ₹{summaryData.paymentsDue.toLocaleString('en-IN')}
                 </p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                  ${summaryData.paymentsDue.toLocaleString()}
-                </p>
+                <p className="text-xs text-slate-400 mt-1">Due within 7 days</p>
               </div>
-              <div className="bg-green-100 dark:bg-green-900 rounded-full p-3">
+              <div className="bg-green-500/20 rounded-full p-3">
                 <svg
-                  className="h-8 w-8 text-green-600 dark:text-green-400"
+                  className="h-8 w-8 text-green-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -107,17 +122,71 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+
+          {/* Engagement Card */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] transition-all duration-200 ease-out">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-white mb-1">Engagement</p>
+                <p className="text-3xl font-bold text-white mt-2">
+                  +{summaryData.engagement}%
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Across all channels</p>
+              </div>
+              <div className="bg-violet-500/20 rounded-full p-3">
+                <svg
+                  className="h-8 w-8 text-violet-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Bar Chart Placeholder */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Revenue Overview
-          </h2>
-          <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-64 flex items-center justify-center">
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              Bar Chart Placeholder
-            </p>
+        {/* Main Content Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Content Performance Card */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-white mb-1">Content Performance</h2>
+              <p className="text-sm text-slate-400">Weekly engagement overview</p>
+            </div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl h-64 flex items-center justify-center">
+              <p className="text-slate-400 text-sm">Bar Chart Placeholder</p>
+            </div>
+          </div>
+
+          {/* Recent Activity Card */}
+          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-white mb-1">Recent Activity</h2>
+              <p className="text-sm text-slate-400">Latest updates from your brand clients</p>
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="flex items-start gap-3 p-3 bg-slate-800/50 border border-slate-700 rounded-lg hover:bg-slate-800 transition-all duration-200">
+                  <div className="w-8 h-8 bg-indigo-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">Client Update</p>
+                    <p className="text-xs text-slate-400 mt-0.5">New content approved for campaign.</p>
+                  </div>
+                  <p className="text-xs text-slate-500 flex-shrink-0">2h ago</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -126,4 +195,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

@@ -13,7 +13,7 @@ const AiTools = () => {
         return data;
       }
     } catch (e) {
-      console.error('Error parsing prefill data:', e);
+      // Silently handle prefill data parsing errors
     }
     return null;
   };
@@ -169,14 +169,17 @@ const AiTools = () => {
   useEffect(() => {
     const api = getCurrentApi();
     
-    
     if (api?.data?.success && api.data.data) {
       const responseData = api.data.data;
       let newResults;
       
-      // For hashtags, wrap the array in another array so all hashtags appear in one card
-      if (currentEndpoint === 'hashtags' && Array.isArray(responseData)) {
-        newResults = [responseData];
+      // For hashtags, backend returns array directly - wrap in array for consistent display
+      if (currentEndpoint === 'hashtags') {
+        if (Array.isArray(responseData)) {
+          newResults = [responseData];
+        } else {
+          newResults = [Array.isArray(responseData) ? responseData : [responseData]];
+        }
       } else {
         newResults = Array.isArray(responseData) ? responseData : [responseData];
       }
@@ -186,7 +189,7 @@ const AiTools = () => {
         toast.success('AI generated successfully!');
       }
     } else if (api?.error) {
-      toast.error(api.error);
+      toast.error(api.error || 'Failed to generate content');
       setResults([]);
     } else if (api?.data && !api.data.success) {
       const errorMsg = api.data.message || api.data.error || 'Request failed';
@@ -295,19 +298,19 @@ const AiTools = () => {
     switch (currentEndpoint) {
       case 'ideas':
         // Ideas are strings from backend
-        return <p className="text-gray-200 whitespace-pre-wrap">{item}</p>;
+        return <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">{item}</p>;
       
       case 'hooks':
         // Hooks are strings
-        return <p className="text-gray-200">{item}</p>;
+        return <p className="text-slate-300 leading-relaxed">{item}</p>;
       
       case 'scripts':
         // Scripts are strings
-        return <pre className="text-gray-200 whitespace-pre-wrap text-sm">{item}</pre>;
+        return <pre className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed font-sans">{item}</pre>;
       
       case 'captions':
         // Captions are strings
-        return <p className="text-gray-200">{item}</p>;
+        return <p className="text-slate-300 leading-relaxed">{item}</p>;
       
       case 'hashtags':
         // For hashtags, the item itself is an array of strings
@@ -315,7 +318,10 @@ const AiTools = () => {
         return (
           <div className="flex flex-wrap gap-2">
             {hashtagArray.map((tag, idx) => (
-              <span key={idx} className="bg-purple-600 px-3 py-1 rounded-full text-sm text-white">
+              <span 
+                key={idx} 
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-1.5 rounded-full text-sm font-medium text-white shadow-sm hover:scale-110 transition-all duration-200 cursor-default"
+              >
                 #{tag}
               </span>
             ))}
@@ -329,11 +335,14 @@ const AiTools = () => {
 
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 dark:text-white">AI Tools</h1>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto bg-slate-950 min-h-screen">
+      <div className="mb-8 animate-fade-in">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">AI Tools</h1>
+        <p className="text-slate-400 text-sm">Built for Indian creators 🇮🇳 • Optimized for Reels, Shorts & Indian social media trends</p>
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto">
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
         {['ideas', 'hooks', 'scripts', 'captions', 'hashtags'].map(tab => (
           <button
             key={tab}
@@ -342,10 +351,10 @@ const AiTools = () => {
               setResults([]);
               setCurrentEndpoint(null);
             }}
-            className={`px-4 py-2 rounded capitalize whitespace-nowrap transition-colors ${
+            className={`px-5 py-2.5 rounded-xl capitalize whitespace-nowrap transition-all duration-200 ease-out font-medium text-sm ${
               activeTab === tab 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30' 
+                : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
             }`}
           >
             {tab}
@@ -355,200 +364,342 @@ const AiTools = () => {
 
       {/* Ideas Tab */}
       {activeTab === 'ideas' && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Ideas</h2>
-          <input
-            type="text"
-            placeholder="Prompt (e.g., trending topics)"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={ideasForm.prompt}
-            onChange={e => setIdeasForm({...ideasForm, prompt: e.target.value})}
-          />
-          <input
-            type="text"
-            placeholder="Niche (e.g., fitness, tech)"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={ideasForm.niche}
-            onChange={e => setIdeasForm({...ideasForm, niche: e.target.value})}
-          />
-          <input
-            type="number"
-            placeholder="Count"
-            min="1"
-            max="20"
-            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={ideasForm.count}
-            onChange={e => setIdeasForm({...ideasForm, count: e.target.value})}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            {loading ? 'Generating...' : 'Generate Ideas'}
-          </button>
+        <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-white">Generate Ideas</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Prompt</label>
+              <input
+                type="text"
+                placeholder="Generate Instagram Reel ideas for Indian audience"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={ideasForm.prompt}
+                onChange={e => setIdeasForm({...ideasForm, prompt: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Niche</label>
+              <input
+                type="text"
+                placeholder="e.g., fitness, tech, lifestyle"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={ideasForm.niche}
+                onChange={e => setIdeasForm({...ideasForm, niche: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Count</label>
+              <input
+                type="number"
+                placeholder="Number of ideas"
+                min="1"
+                max="20"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={ideasForm.count}
+                onChange={e => setIdeasForm({...ideasForm, count: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all duration-200 ease-out shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Ideas'
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Hooks Tab */}
       {activeTab === 'hooks' && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Hooks</h2>
-          <input
-            type="text"
-            placeholder="Topic"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={hooksForm.topic}
-            onChange={e => setHooksForm({...hooksForm, topic: e.target.value})}
-          />
-          <input
-            type="number"
-            placeholder="Count"
-            min="1"
-            max="20"
-            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={hooksForm.count}
-            onChange={e => setHooksForm({...hooksForm, count: e.target.value})}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            {loading ? 'Generating...' : 'Generate Hooks'}
-          </button>
+        <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-white">Generate Hooks</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Topic</label>
+              <input
+                type="text"
+                placeholder="Create YouTube Shorts hooks for Indian creators"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={hooksForm.topic}
+                onChange={e => setHooksForm({...hooksForm, topic: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Count</label>
+              <input
+                type="number"
+                placeholder="Number of hooks"
+                min="1"
+                max="20"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={hooksForm.count}
+                onChange={e => setHooksForm({...hooksForm, count: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all duration-200 ease-out shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Hooks'
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Scripts Tab */}
       {activeTab === 'scripts' && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Script</h2>
-          <input
-            type="text"
-            placeholder="Topic"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={scriptsForm.topic}
-            onChange={e => setScriptsForm({...scriptsForm, topic: e.target.value})}
-          />
-          <select
-            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
-            value={scriptsForm.length}
-            onChange={e => setScriptsForm({...scriptsForm, length: e.target.value})}
-          >
-            <option value="short">Short (200-300 words)</option>
-            <option value="medium">Medium (500-700 words)</option>
-            <option value="long">Long (1000-1500 words)</option>
-          </select>
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            {loading ? 'Generating...' : 'Generate Script'}
-          </button>
+        <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-white">Generate Script</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Topic</label>
+              <input
+                type="text"
+                placeholder="Enter your topic"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={scriptsForm.topic}
+                onChange={e => setScriptsForm({...scriptsForm, topic: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Length</label>
+              <select
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={scriptsForm.length}
+                onChange={e => setScriptsForm({...scriptsForm, length: e.target.value})}
+                disabled={loading}
+              >
+                <option value="short">Short (200-300 words)</option>
+                <option value="medium">Medium (500-700 words)</option>
+                <option value="long">Long (1000-1500 words)</option>
+              </select>
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all duration-200 ease-out shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Script'
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Captions Tab */}
       {activeTab === 'captions' && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Captions</h2>
-          <input
-            type="text"
-            placeholder="Topic"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={captionsForm.topic}
-            onChange={e => setCaptionsForm({...captionsForm, topic: e.target.value})}
-          />
-          <select
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white"
-            value={captionsForm.tone}
-            onChange={e => setCaptionsForm({...captionsForm, tone: e.target.value})}
-          >
-            <option value="motivational">Motivational</option>
-            <option value="funny">Funny</option>
-            <option value="informative">Informative</option>
-            <option value="engaging">Engaging</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Count"
-            min="1"
-            max="20"
-            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={captionsForm.count}
-            onChange={e => setCaptionsForm({...captionsForm, count: e.target.value})}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            {loading ? 'Generating...' : 'Generate Captions'}
-          </button>
+        <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-white">Generate Captions</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Topic</label>
+              <input
+                type="text"
+                placeholder="Write captions for Indian brands & startups"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={captionsForm.topic}
+                onChange={e => setCaptionsForm({...captionsForm, topic: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Tone</label>
+              <select
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={captionsForm.tone}
+                onChange={e => setCaptionsForm({...captionsForm, tone: e.target.value})}
+                disabled={loading}
+              >
+                <option value="motivational">Motivational</option>
+                <option value="funny">Funny</option>
+                <option value="informative">Informative</option>
+                <option value="engaging">Engaging</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Count</label>
+              <input
+                type="number"
+                placeholder="Number of captions"
+                min="1"
+                max="20"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={captionsForm.count}
+                onChange={e => setCaptionsForm({...captionsForm, count: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all duration-200 ease-out shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Captions'
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Hashtags Tab */}
       {activeTab === 'hashtags' && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-xl font-bold mb-4 dark:text-white">Generate Hashtags</h2>
-          <input
-            type="text"
-            placeholder="Niche"
-            className="w-full p-3 mb-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={hashtagsForm.niche}
-            onChange={e => setHashtagsForm({...hashtagsForm, niche: e.target.value})}
-          />
-          <input
-            type="number"
-            placeholder="Count"
-            min="1"
-            max="50"
-            className="w-full p-3 mb-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500"
-            value={hashtagsForm.count}
-            onChange={e => setHashtagsForm({...hashtagsForm, count: e.target.value})}
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full bg-purple-600 py-3 rounded font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-colors"
-          >
-            {loading ? 'Generating...' : 'Generate Hashtags'}
-          </button>
+        <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
+          <h2 className="text-xl font-semibold mb-6 text-white">Generate Hashtags</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Niche</label>
+              <input
+                type="text"
+                placeholder="e.g., fitness, tech, lifestyle"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={hashtagsForm.niche}
+                onChange={e => setHashtagsForm({...hashtagsForm, niche: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Count</label>
+              <input
+                type="number"
+                placeholder="Number of hashtags"
+                min="1"
+                max="50"
+                className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed"
+                value={hashtagsForm.count}
+                onChange={e => setHashtagsForm({...hashtagsForm, count: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <button
+              onClick={handleGenerate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 rounded-xl font-semibold hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white transition-all duration-200 ease-out shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Hashtags'
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Loading Spinner */}
       {loading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div className="flex justify-center items-center py-16">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-3 border-slate-800 border-t-indigo-600"></div>
+            <p className="text-slate-400 text-sm font-medium">Generating your content...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State - Before Generation */}
+      {!loading && results.length === 0 && !currentEndpoint && (
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-12 md:p-16 text-center animate-fade-in">
+          <div className="max-w-md mx-auto">
+            <div className="mb-6">
+              <svg className="w-20 h-20 mx-auto text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No content generated yet</h3>
+            <p className="text-slate-400">Let's create your first viral idea for Indian audiences 🚀</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {!loading && results.length === 0 && currentEndpoint && getCurrentApi()?.error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-8 text-center">
+          <p className="text-red-400 font-medium">Failed to generate content. Please try again.</p>
         </div>
       )}
 
       {/* Results */}
       {!loading && results.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold mb-4 dark:text-white">Results</h2>
-          <div className="grid gap-4">
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-semibold text-white">Results</h2>
+            <span className="text-sm text-slate-400 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">
+              {results.length} {results.length === 1 ? 'result' : 'results'}
+            </span>
+          </div>
+          <div className="grid gap-6">
             {results.map((item, idx) => (
-              <div key={idx} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <div className="mb-4 dark:text-gray-200">
+              <div 
+                key={idx} 
+                className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-200 ease-out opacity-0 animate-fade-in"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="mb-6 text-slate-300">
                   {formatResult(item)}
                 </div>
-                <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex gap-3 pt-6 border-t border-slate-800">
                   <button
                     onClick={() => saveToPlanner(item, idx)}
-                    className="bg-green-600 px-4 py-2 rounded font-medium hover:bg-green-700 text-white transition-colors"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2.5 rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 text-white transition-all duration-200 ease-out shadow-sm hover:shadow-md hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Save to Planner
                   </button>
                   <button
                     onClick={() => copyToClipboard(item)}
-                    className="bg-blue-600 px-4 py-2 rounded font-medium hover:bg-blue-700 text-white transition-colors"
+                    className="flex-1 bg-slate-800/50 border border-slate-700 px-5 py-2.5 rounded-xl font-medium hover:bg-slate-800 hover:scale-[1.02] text-slate-300 transition-all duration-200 ease-out"
                   >
-                    Copy
+                    {currentEndpoint === 'hashtags' ? 'Copy All Hashtags' : 'Copy'}
                   </button>
                 </div>
               </div>

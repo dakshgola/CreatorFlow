@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import useDarkMode from './hooks/useDarkMode';
 import Login from './pages/Login';
@@ -24,14 +25,15 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
+        <div className="min-h-screen bg-slate-950 transition-colors duration-200">
           <Toaster
             position="top-right"
             toastOptions={{
               duration: 3000,
               style: {
-                background: 'var(--toast-bg, #fff)',
-                color: 'var(--toast-color, #333)',
+                background: '#1e293b',
+                color: '#f1f5f9',
+                border: '1px solid #334155',
               },
               success: {
                 iconTheme: {
@@ -47,8 +49,10 @@ function App() {
               },
             }}
           />
-          <Navbar />
-          <Routes>
+          <Sidebar />
+          <div className="lg:ml-64">
+            <Navbar />
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -135,6 +139,7 @@ function App() {
               }
             />
           </Routes>
+          </div>
         </div>
       </Router>
     </AuthProvider>

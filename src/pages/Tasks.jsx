@@ -75,13 +75,13 @@ const Tasks = () => {
     
     switch (priority) {
       case 'high':
-        return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200`;
+        return `${baseClasses} bg-red-500/20 text-red-400 border border-red-500/30`;
       case 'medium':
-        return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200`;
+        return `${baseClasses} bg-yellow-500/20 text-yellow-400 border border-yellow-500/30`;
       case 'low':
-        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`;
+        return `${baseClasses} bg-green-500/20 text-green-400 border border-green-500/30`;
       default:
-        return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200`;
+        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
     }
   };
 
@@ -98,78 +98,78 @@ const Tasks = () => {
   const completedTasks = tasks.filter((task) => task.completed);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-slate-950 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
             Tasks
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-slate-400 text-sm">
             Manage your tasks and track progress
           </p>
         </div>
 
         {/* Incomplete Tasks */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-semibold text-white mb-4">
             Active Tasks ({incompleteTasks.length})
           </h2>
           
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+          <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
+              <table className="min-w-full divide-y divide-slate-800">
+                <thead className="bg-slate-800/50">
                   <tr>
                     <th scope="col" className="w-12 px-6 py-3"></th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                     >
                       Title
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                     >
                       Client Name
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                     >
                       Due Date
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                     >
                       Priority
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-slate-900/60 divide-y divide-slate-800">
                   {incompleteTasks.map((task) => (
                     <tr
                       key={task.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
+                      className="hover:bg-slate-800/50 transition-all duration-200 ease-out"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
                           checked={task.completed}
                           onChange={() => handleToggleComplete(task.id)}
-                          className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                          className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer bg-slate-800/50"
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-white">
                           {task.title}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                        <div className="text-sm text-slate-300">
                           {task.clientName}
                         </div>
                       </td>
@@ -177,8 +177,8 @@ const Tasks = () => {
                         <div
                           className={`text-sm ${
                             isOverdue(task.dueDate)
-                              ? 'text-red-600 dark:text-red-400 font-medium'
-                              : 'text-gray-600 dark:text-gray-300'
+                              ? 'text-red-400 font-medium'
+                              : 'text-slate-300'
                           }`}
                         >
                           {formatDate(task.dueDate)}
@@ -204,23 +204,23 @@ const Tasks = () => {
             {incompleteTasks.map((task) => (
               <div
                 key={task.id}
-                className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4"
+                className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ease-out"
               >
                 <div className="flex items-start space-x-3">
                   <input
                     type="checkbox"
                     checked={task.completed}
                     onChange={() => handleToggleComplete(task.id)}
-                    className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer flex-shrink-0"
+                    className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer flex-shrink-0 bg-slate-800/50"
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-medium text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-base font-medium text-white mb-2">
                       {task.title}
                     </h3>
                     <div className="space-y-1">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center text-sm text-slate-300">
                         <svg
-                          className="h-4 w-4 mr-2 text-gray-400"
+                          className="h-4 w-4 mr-2 text-slate-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -238,8 +238,8 @@ const Tasks = () => {
                         <div
                           className={`text-sm ${
                             isOverdue(task.dueDate)
-                              ? 'text-red-600 dark:text-red-400 font-medium'
-                              : 'text-gray-600 dark:text-gray-300'
+                              ? 'text-red-400 font-medium'
+                              : 'text-slate-300'
                           }`}
                         >
                           <svg
@@ -275,69 +275,69 @@ const Tasks = () => {
         {/* Completed Tasks */}
         {completedTasks.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-xl font-semibold text-white mb-4">
               Completed Tasks ({completedTasks.length})
             </h2>
             
             {/* Desktop Table View */}
-            <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden opacity-75">
+            <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden opacity-60">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+                <table className="min-w-full divide-y divide-slate-800">
+                  <thead className="bg-slate-800/50">
                     <tr>
                       <th scope="col" className="w-12 px-6 py-3"></th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                       >
                         Title
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                       >
                         Client Name
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                       >
                         Due Date
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                       >
                         Priority
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="bg-slate-900/60 divide-y divide-slate-800">
                     {completedTasks.map((task) => (
                       <tr
                         key={task.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
+                        className="hover:bg-slate-800/50 transition-all duration-200 ease-out"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <input
                             type="checkbox"
                             checked={task.completed}
                             onChange={() => handleToggleComplete(task.id)}
-                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                            className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer bg-slate-800/50"
                           />
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-500 dark:text-gray-400 line-through">
+                          <div className="text-sm font-medium text-slate-500 line-through">
                             {task.title}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-slate-500">
                             {task.clientName}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-slate-500">
                             {formatDate(task.dueDate)}
                           </div>
                         </td>
@@ -365,7 +365,7 @@ const Tasks = () => {
                       type="checkbox"
                       checked={task.completed}
                       onChange={() => handleToggleComplete(task.id)}
-                      className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer flex-shrink-0"
+                      className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer flex-shrink-0 bg-slate-800/50"
                     />
                     <div className="flex-1 min-w-0">
                       <h3 className="text-base font-medium text-gray-500 dark:text-gray-400 line-through mb-2">
@@ -389,7 +389,7 @@ const Tasks = () => {
                           {task.clientName}
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-slate-500">
                             <svg
                               className="h-4 w-4 inline mr-1"
                               fill="none"

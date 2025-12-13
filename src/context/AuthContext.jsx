@@ -5,11 +5,6 @@ const AuthContext = createContext(null);
 // Base API URL - uses environment variable in production, localhost in development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Log API URL in development for debugging
-if (import.meta.env.DEV) {
-  console.log('🔗 API Base URL:', API_BASE_URL);
-}
-
 /**
  * AuthProvider component that wraps the app and provides authentication context
  */
@@ -30,7 +25,6 @@ export const AuthProvider = ({ children }) => {
         // Verify token is still valid by fetching current user
         verifyToken(storedToken);
       } catch (error) {
-        console.error('Error parsing stored user data:', error);
         // Clear invalid data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -65,7 +59,6 @@ export const AuthProvider = ({ children }) => {
         clearAuth();
       }
     } catch (error) {
-      console.error('Token verification error:', error);
       clearAuth();
     } finally {
       setLoading(false);
@@ -121,7 +114,6 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message || 'Registration failed' };
       }
     } catch (error) {
-      console.error('Register error:', error);
       // More specific error messages
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         return { success: false, message: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' };
@@ -169,7 +161,6 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message || 'Login failed' };
       }
     } catch (error) {
-      console.error('Login error:', error);
       // More specific error messages
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         return { success: false, message: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' };

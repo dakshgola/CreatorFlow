@@ -163,41 +163,38 @@ const Clients = () => {
     }
   };
 
-  // Format currency
+  // Format currency (Indian Rupees)
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+    return `₹${amount.toLocaleString('en-IN')}`;
   };
 
   if (loading && clients.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading clients...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-3 border-slate-800 border-t-indigo-600 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading brand clients...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-slate-950 transition-colors duration-200">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-              Clients
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Brand Clients
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Manage your client relationships and track payments
+            <p className="text-slate-400 text-sm">
+              Manage your brand relationships and track payments
             </p>
           </div>
           <button
             onClick={handleAddClient}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl transition-all duration-200 ease-out flex items-center justify-center space-x-2 shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
           >
             <svg
               className="h-5 w-5"
@@ -224,62 +221,64 @@ const Clients = () => {
         )}
 
         {/* Desktop Table View */}
-        <div className="hidden md:block bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+        <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+            <table className="min-w-full divide-y divide-slate-800">
+              <thead className="bg-slate-800/50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                   >
                     Name
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                   >
                     Niche
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                   >
                     Payment Rate
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                   >
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-slate-900/60 divide-y divide-slate-800">
                 {clients.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      No clients found. Click "Add Client" to get started.
+                    <td colSpan="4" className="px-6 py-12 text-center">
+                      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8">
+                        <p className="text-slate-400 text-lg">No brand clients yet ? your first brand deal is coming ??</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   clients.map((client) => (
                     <tr
                       key={client._id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150"
+                      className="hover:bg-slate-800/50 transition-colors duration-200 ease-out"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-white">
                           {client.name}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                        <div className="text-sm text-slate-300">
                           {client.niche}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white font-medium">
+                        <div className="text-sm text-white font-semibold">
                           {formatCurrency(client.paymentRate)}
                         </div>
                       </td>
@@ -287,7 +286,7 @@ const Clients = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleEditClient(client)}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
                             title="Edit"
                           >
                             <svg
@@ -307,7 +306,7 @@ const Clients = () => {
                           <button
                             onClick={() => handleDeleteClient(client._id)}
                             disabled={deleting}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                            className="text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors duration-200"
                             title="Delete"
                           >
                             <svg
@@ -337,23 +336,23 @@ const Clients = () => {
         {/* Mobile Card View */}
         <div className="md:hidden space-y-4">
           {clients.length === 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 text-center text-gray-500 dark:text-gray-400">
-              No clients found. Click "Add Client" to get started.
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8 text-center">
+              <p className="text-slate-400 text-lg">No brand clients yet — your first brand deal is coming 💼</p>
             </div>
           ) : (
             clients.map((client) => (
               <div
                 key={client._id}
-                className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4"
+                className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01] transition-all duration-200 ease-out"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-semibold text-white">
                     {client.name}
                   </h3>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleEditClient(client)}
-                      className="text-blue-600 dark:text-blue-400"
+                      className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
                     >
                       <svg
                         className="h-5 w-5"
@@ -372,7 +371,7 @@ const Clients = () => {
                     <button
                       onClick={() => handleDeleteClient(client._id)}
                       disabled={deleting}
-                      className="text-red-600 dark:text-red-400 disabled:opacity-50"
+                      className="text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors duration-200"
                     >
                       <svg
                         className="h-5 w-5"
@@ -391,9 +390,9 @@ const Clients = () => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center space-x-2 text-sm text-slate-300">
                     <svg
-                      className="h-4 w-4 text-gray-400 dark:text-gray-500"
+                      className="h-4 w-4 text-slate-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -407,7 +406,7 @@ const Clients = () => {
                     </svg>
                     <span>{client.niche}</span>
                   </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="text-sm font-semibold text-white">
                     {formatCurrency(client.paymentRate)}
                   </div>
                 </div>
@@ -419,16 +418,16 @@ const Clients = () => {
 
       {/* Add/Edit Client Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {editingClient ? 'Edit Client' : 'Add New Client'}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 md:p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-white">
+                  {editingClient ? 'Edit Brand Client' : 'Add New Brand Client'}
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="text-slate-400 hover:text-white transition-colors duration-200"
                 >
                   <svg
                     className="h-6 w-6"
@@ -448,8 +447,8 @@ const Clients = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Name <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -457,13 +456,14 @@ const Clients = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
+                    placeholder="Brand or client name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Niche <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Niche <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -471,13 +471,14 @@ const Clients = () => {
                     value={formData.niche}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
+                    placeholder="e.g., Tech, Fashion, Food"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Payment Rate <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Payment Rate (₹) <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -487,12 +488,13 @@ const Clients = () => {
                     required
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
+                    placeholder="Enter amount in ₹"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Notes
                   </label>
                   <textarea
@@ -500,16 +502,17 @@ const Clients = () => {
                     value={formData.notes}
                     onChange={handleInputChange}
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out resize-none"
+                    placeholder="Additional notes about this brand client"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
                     Links
                   </label>
                   <div className="space-y-2">
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <input
                         type="text"
                         placeholder="Platform (e.g., Instagram)"
@@ -517,7 +520,7 @@ const Clients = () => {
                         onChange={(e) =>
                           setLinkInput({ ...linkInput, platform: e.target.value })
                         }
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="flex-1 p-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
                       />
                       <input
                         type="url"
@@ -526,30 +529,30 @@ const Clients = () => {
                         onChange={(e) =>
                           setLinkInput({ ...linkInput, url: e.target.value })
                         }
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="flex-1 p-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
                       />
                       <button
                         type="button"
                         onClick={handleAddLink}
-                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+                        className="px-4 py-3 bg-slate-800/50 border border-slate-700 text-slate-300 rounded-xl hover:bg-slate-800 transition-all duration-200 ease-out font-medium"
                       >
                         Add
                       </button>
                     </div>
                     {formData.links.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {formData.links.map((link, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md"
+                            className="flex items-center justify-between bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-xl"
                           >
-                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="text-sm text-slate-300">
                               <strong>{link.platform}:</strong> {link.url}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleRemoveLink(index)}
-                              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                              className="text-red-400 hover:text-red-300 transition-colors duration-200"
                             >
                               <svg
                                 className="h-4 w-4"
@@ -572,18 +575,18 @@ const Clients = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex justify-end gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="px-6 py-3 bg-slate-800/50 border border-slate-700 text-slate-300 rounded-xl hover:bg-slate-800 transition-all duration-200 ease-out font-semibold"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creating || updating}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-out font-semibold shadow-md shadow-indigo-500/30 hover:shadow-lg"
                   >
                     {creating || updating
                       ? 'Saving...'
