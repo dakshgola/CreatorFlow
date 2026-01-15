@@ -43,7 +43,7 @@ CreatorFlow is a modern **dashboard web app** built for content creators to mana
 - React Hot Toast
 - Recharts (Analytics charts)
 
-### Backend (Optional / API Ready)
+### Backend
 - Node.js + Express
 - MongoDB + Mongoose
 - Gemini API (Google Generative AI)
