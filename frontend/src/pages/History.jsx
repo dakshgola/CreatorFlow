@@ -1,221 +1,170 @@
-import { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
-import useApi from '../hooks/useApi';
-import React from "react";
-
+import React, { useMemo, useState } from "react";
+import PageShell from "../components/PageShell";
 
 const History = () => {
-  const [filter, setFilter] = useState('all');
-  const navigate = useNavigate();
-  
-  const historyApi = useApi('/history', { immediate: true });
+  const [logs, setLogs] = useState([
+    {
+      id: "h1",
+      type: "AI",
+      title: "Generated 5 ideas for fitness niche",
+      description: "Prompt: reels for Indian college fitness creators",
+      time: "2h ago",
+    },
+    {
+      id: "h2",
+      type: "Projects",
+      title: "Saved output to Planner",
+      description: "Project added: Blinkit Emotional Story Ad",
+      time: "5h ago",
+    },
+    {
+      id: "h3",
+      type: "Auth",
+      title: "Logged in successfully",
+      description: "Session started",
+      time: "Yesterday",
+    },
+    {
+      id: "h4",
+      type: "Other",
+      title: "Updated profile settings",
+      description: "Theme preferences saved",
+      time: "2 days ago",
+    },
+  ]);
 
-  // Extract data from API response (history route returns array directly)
-  const historyData = Array.isArray(historyApi.data) ? historyApi.data : [];
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  // Filter history by type
-  const filteredHistory = filter === 'all' 
-    ? historyData
-    : historyData.filter(h => {
-        // Map filter types to history types
-        // AI outputs are saved with type 'project' or 'other' in the backend
-        if (filter === 'ai-ideas' || filter === 'ai-scripts' || filter === 'ai-captions' || filter === 'ai-hashtags' || filter === 'ai-hooks') {
-          return h.type === 'project' || h.type === 'other';
-        }
-        return h.type === filter;
-      });
+  const filtered = useMemo(() => {
+    return logs.filter((l) => {
+      const matchSearch =
+        l.title.toLowerCase().includes(search.toLowerCase()) ||
+        l.description.toLowerCase().includes(search.toLowerCase());
 
-  // Filter AI-related history items by metadata
-  const aiFilteredHistory = filter.startsWith('ai-') 
-    ? filteredHistory.filter(h => {
-        const metadata = h.metadata || {};
-        const filterType = filter.replace('ai-', '');
-        
-        // Check metadata to determine AI type
-        if (filterType === 'ideas' && (metadata.prompt || metadata.niche)) return true;
-        if (filterType === 'hooks' && metadata.topic) return true;
-        if (filterType === 'scripts' && metadata.topic) return true;
-        if (filterType === 'captions' && (metadata.topic || metadata.tone)) return true;
-        if (filterType === 'hashtags' && metadata.niche) return true;
-        
-        return false;
-      })
-    : filteredHistory;
+      const matchType =
+        typeFilter === "all" ? true : l.type.toLowerCase() === typeFilter;
 
-  useEffect(() => {
-    if (historyApi.error) {
-      toast.error('Failed to load history');
-    }
-  }, [historyApi.error]);
+      return matchSearch && matchType;
+    });
+  }, [logs, search, typeFilter]);
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
+  const typeBadge = (type) => {
+    if (type === "AI") return "badge badge-violet";
+    if (type === "Projects") return "badge badge-indigo";
+    if (type === "Auth") return "badge badge-green";
+    return "badge border-slate-700 bg-slate-800/40 text-slate-200";
   };
 
-  const handleReuse = (item) => {
-    const metadata = item.metadata || {};
-    
-    // Determine which tab and form to prefill based on metadata
-    let tab = 'ideas';
-    let formData = {};
-    
-    if (metadata.prompt && metadata.niche) {
-      // Ideas
-      tab = 'ideas';
-      formData = {
-        prompt: metadata.prompt,
-        niche: metadata.niche,
-        count: metadata.count || 5
-      };
-    } else if (metadata.topic && !metadata.tone && !metadata.length) {
-      // Hooks
-      tab = 'hooks';
-      formData = {
-        topic: metadata.topic,
-        count: metadata.count || 5
-      };
-    } else if (metadata.topic && metadata.length) {
-      // Scripts
-      tab = 'scripts';
-      formData = {
-        topic: metadata.topic,
-        length: metadata.length || 'medium'
-      };
-    } else if (metadata.topic && metadata.tone) {
-      // Captions
-      tab = 'captions';
-      formData = {
-        topic: metadata.topic,
-        tone: metadata.tone || 'motivational',
-        count: metadata.count || 3
-      };
-    } else if (metadata.niche && !metadata.prompt) {
-      // Hashtags
-      tab = 'hashtags';
-      formData = {
-        niche: metadata.niche,
-        count: metadata.count || 15
-      };
-    }
-    
-    // Store form data in localStorage to be picked up by AITools
-    localStorage.setItem('aiToolsPrefill', JSON.stringify({ tab, formData }));
-    
-    // Navigate to AI Tools
-    navigate('/ai-tools');
-    toast.success('Form prefilled! Check AI Tools page.');
-  };
-
-  const getHistoryTypeLabel = (item) => {
-    const metadata = item.metadata || {};
-    
-    if (metadata.prompt && metadata.niche) return 'AI Ideas';
-    if (metadata.topic && !metadata.tone && !metadata.length) return 'AI Hooks';
-    if (metadata.topic && metadata.length) return 'AI Scripts';
-    if (metadata.topic && metadata.tone) return 'AI Captions';
-    if (metadata.niche && !metadata.prompt) return 'AI Hashtags';
-    
-    return item.type.charAt(0).toUpperCase() + item.type.slice(1);
+  const typeDot = (type) => {
+    if (type === "AI") return "bg-violet-500";
+    if (type === "Projects") return "bg-indigo-500";
+    if (type === "Auth") return "bg-emerald-500";
+    return "bg-slate-500";
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto bg-slate-950 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">History</h1>
-        <p className="text-slate-400 text-sm">View and reuse your saved AI-generated content</p>
-      </div>
+    <div>
+      <PageShell
+        title="History"
+        subtitle="Track your latest actions across AI tools, planner, clients and settings."
+        right={
+          <>
+            <button className="btn-secondary" onClick={() => setLogs([])}>
+              🧹 Clear Demo
+            </button>
+          </>
+        }
+      />
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-        {['all', 'ai-ideas', 'ai-hooks', 'ai-scripts', 'ai-captions', 'ai-hashtags', 'project', 'client', 'task', 'payment'].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-5 py-2.5 rounded-xl capitalize whitespace-nowrap transition-all duration-200 ease-out font-medium text-sm ${
-              filter === f 
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30' 
-                : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
-            }`}
-          >
-            {f.replace('ai-', 'AI ')}
-          </button>
-        ))}
-      </div>
+      {/* Filters */}
+      <div className="card p-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className="text-sm text-slate-300">Search</label>
+            <input
+              className="input mt-2"
+              placeholder="Search history..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-      {/* Loading Spinner */}
-      {historyApi.loading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-3 border-slate-800 border-t-indigo-600"></div>
-        </div>
-      )}
-
-      {/* History List */}
-      {!historyApi.loading && aiFilteredHistory.length === 0 && (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-12 text-center">
-          <p className="text-slate-400 text-lg">No history found. Start using AI Tools!</p>
-        </div>
-      )}
-
-      {!historyApi.loading && aiFilteredHistory.length > 0 && (
-        <div className="grid gap-6">
-          {aiFilteredHistory.map(item => (
-            <div 
-              key={item._id || item.id} 
-              className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ease-out"
+          <div>
+            <label className="text-sm text-slate-300">Type</label>
+            <select
+              className="input mt-2"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-3 py-1 rounded-full text-xs font-semibold capitalize">
-                    {getHistoryTypeLabel(item)}
-                  </span>
-                  <span className="text-sm text-slate-400">
-                    {new Date(item.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  {/* Show Reuse button only for AI-related history */}
-                  {(item.metadata?.prompt || item.metadata?.topic || item.metadata?.niche) && (
-                    <button
-                      onClick={() => handleReuse(item)}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-2 rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 text-white transition-all duration-200 ease-out text-sm shadow-sm hover:shadow-md"
-                    >
-                      Reuse
-                    </button>
-                  )}
-                  <button
-                    onClick={() => copyToClipboard(item.content)}
-                    className="bg-slate-800/50 border border-slate-700 px-4 py-2 rounded-xl font-medium hover:bg-slate-800 text-slate-300 transition-all duration-200 ease-out text-sm"
-                  >
-                    Copy
-                  </button>
-                </div>
-              </div>
-              
-              {/* Display metadata if available */}
-              {item.metadata && Object.keys(item.metadata).length > 0 && (
-                <div className="mb-4 p-3 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-slate-400">
-                  {item.metadata.prompt && <span className="mr-4"><strong>Prompt:</strong> {item.metadata.prompt}</span>}
-                  {item.metadata.topic && <span className="mr-4"><strong>Topic:</strong> {item.metadata.topic}</span>}
-                  {item.metadata.niche && <span className="mr-4"><strong>Niche:</strong> {item.metadata.niche}</span>}
-                  {item.metadata.tone && <span className="mr-4"><strong>Tone:</strong> {item.metadata.tone}</span>}
-                </div>
-              )}
-              
-              <div className="text-slate-300 whitespace-pre-wrap text-sm leading-relaxed pt-4 border-t border-slate-800">
-                {item.content}
-              </div>
-            </div>
-          ))}
+              <option value="all">all</option>
+              <option value="ai">ai</option>
+              <option value="projects">projects</option>
+              <option value="auth">auth</option>
+              <option value="other">other</option>
+            </select>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Timeline */}
+      <div className="card p-6">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-white font-bold text-lg">Activity Log</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Showing {filtered.length} of {logs.length}
+            </p>
+          </div>
+          <span className="badge badge-indigo">Timeline</span>
+        </div>
+
+        <div className="divider my-6" />
+
+        {filtered.length === 0 ? (
+          <div className="text-center p-10">
+            <p className="text-white font-bold text-lg">No activity found</p>
+            <p className="text-sm text-slate-400 mt-2">
+              Try changing filters or search text.
+            </p>
+          </div>
+        ) : (
+          <div className="relative">
+            {/* Line */}
+            <div className="absolute left-3 top-0 bottom-0 w-[2px] bg-slate-800/70" />
+
+            <div className="space-y-5">
+              {filtered.map((log) => (
+                <div key={log.id} className="flex gap-4">
+                  {/* Dot */}
+                  <div className="relative z-10 mt-1">
+                    <div
+                      className={`w-3 h-3 rounded-full ${typeDot(log.type)}`}
+                    />
+                  </div>
+
+                  {/* Card */}
+                  <div className="flex-1 rounded-2xl bg-slate-950/40 border border-slate-800 p-4 hover:bg-slate-900/40 transition">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <p className="text-white font-semibold">{log.title}</p>
+                        <p className="text-sm text-slate-400 mt-1">
+                          {log.description}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={typeBadge(log.type)}>{log.type}</span>
+                        <span className="text-xs text-slate-500">{log.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

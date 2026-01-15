@@ -1,153 +1,134 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import useApi from '../hooks/useApi';
-import useDarkMode from '../hooks/useDarkMode';
-import React from "react";
-
+import React, { useState } from "react";
+import { toast } from "react-hot-toast";
+import PageShell from "../components/PageShell";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const Settings = () => {
-  const { darkMode, toggleDarkMode } = useDarkMode();
-  const [user, setUser] = useState(null);
-  
-  const userApi = useApi('/auth/me', { immediate: true });
-  const themeApi = useApi('/auth/theme', { method: 'PUT', immediate: false });
+  const { user, logout } = useAuth();
 
-  // Update user state when API data loads
-  useEffect(() => {
-    if (userApi.data?.success && userApi.data.user) {
-      const userData = userApi.data.user;
-      setUser(userData);
-      // Sync dark mode with user preference (only on initial load)
-      if (userData.themePreference) {
-        const shouldBeDark = userData.themePreference === 'dark';
-        if (shouldBeDark !== darkMode) {
-          toggleDarkMode();
-        }
-      }
-    } else if (userApi.error) {
-      toast.error('Failed to load user settings');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userApi.data, userApi.error]);
+  const [profile, setProfile] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+  });
 
-  const handleThemeChange = async (newTheme) => {
-    try {
-      const result = await themeApi.callApi({ 
-        body: { themePreference: newTheme } 
-      });
-      
-      // Theme API returns user object directly (not wrapped in success/data)
-      if (result.success && result.data) {
-        const updatedUser = result.data;
-        
-        // Update local dark mode state
-        if (newTheme === 'dark' && !darkMode) {
-          toggleDarkMode();
-        } else if (newTheme === 'light' && darkMode) {
-          toggleDarkMode();
-        }
-        
-        // Update user state
-        setUser(updatedUser);
-        
-        toast.success('Theme preference saved!');
-      } else if (result.error) {
-        toast.error(result.error || 'Failed to update theme');
-      }
-    } catch (err) {
-      toast.error('Error updating theme');
-    }
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    toast.success("Profile saved (demo)");
   };
 
-  const currentTheme = user?.themePreference || (darkMode ? 'dark' : 'light');
+  const clearLocal = () => {
+    localStorage.clear();
+    toast.success("Local data cleared");
+    window.location.reload();
+  };
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto bg-slate-950 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">Settings</h1>
-        <p className="text-slate-400 text-sm">Manage your account preferences and appearance</p>
-      </div>
+    <div>
+      <PageShell
+        title="Settings"
+        subtitle="Manage your profile and security settings."
+      />
 
-      {/* Profile Section */}
-      <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl mb-6">
-        <h2 className="text-xl font-semibold mb-6 text-white">Profile</h2>
-        {userApi.loading ? (
-          <div className="flex justify-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-3 border-slate-800 border-t-indigo-600"></div>
-          </div>
-        ) : user ? (
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-slate-300">Name</label>
-              <p className="text-white mt-1">{user.name}</p>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Left column */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* Profile */}
+          <div className="card p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-lg font-bold text-white">Profile</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Update your account information.
+                </p>
+              </div>
+              <span className="badge badge-indigo">Account</span>
             </div>
-            <div>
-              <label className="text-sm font-medium text-slate-300">Email</label>
-              <p className="text-white mt-1">{user.email}</p>
-            </div>
-          </div>
-        ) : (
-          <p className="text-slate-400">Failed to load user information</p>
-        )}
-      </div>
 
-      {/* Appearance Section */}
-      <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-xl">
-        <h2 className="text-xl font-semibold mb-2 text-white">Appearance</h2>
-        <p className="text-sm text-slate-400 mb-6">
-          Choose your preferred theme. Your preference will be saved and synced across devices.
-        </p>
-        
-        <div className="flex gap-4">
-          <button
-            onClick={() => handleThemeChange('light')}
-            disabled={themeApi.loading}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ease-out ${
-              currentTheme === 'light' 
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30' 
-                : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {themeApi.loading && currentTheme === 'light' ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </span>
-            ) : (
-              'Light Mode'
-            )}
-          </button>
-          <button
-            onClick={() => handleThemeChange('dark')}
-            disabled={themeApi.loading}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ease-out ${
-              currentTheme === 'dark' 
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30' 
-                : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-800'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {themeApi.loading && currentTheme === 'dark' ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </span>
-            ) : (
-              'Dark Mode'
-            )}
-          </button>
+            <div className="divider my-6" />
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-300">Full Name</label>
+                <input
+                  className="input mt-2"
+                  value={profile.name}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, name: e.target.value }))
+                  }
+                  placeholder="Your name"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-300">Email</label>
+                <input
+                  className="input mt-2"
+                  value={profile.email}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, email: e.target.value }))
+                  }
+                  placeholder="Your email"
+                />
+              </div>
+
+              <button className="btn-primary w-full py-3">
+                ✅ Save Changes
+              </button>
+            </form>
+          </div>
         </div>
-        
-        {currentTheme && (
-          <p className="text-sm text-slate-400 mt-6 pt-6 border-t border-slate-800">
-            Current theme: <span className="font-semibold capitalize text-slate-300">{currentTheme}</span>
-          </p>
-        )}
+
+        {/* Right column */}
+        <div className="space-y-6">
+          {/* Security */}
+          <div className="card p-6">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-lg font-bold text-white">Security</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Control session and access.
+                </p>
+              </div>
+              <span className="badge badge-green">Safe</span>
+            </div>
+
+            <div className="divider my-6" />
+
+            <button
+              className="btn-danger w-full justify-center py-3"
+              onClick={() => {
+                logout();
+                toast.success("Logged out");
+              }}
+            >
+              🚪 Logout
+            </button>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="card p-6 border border-red-500/20">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-lg font-bold text-white">Danger Zone</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Reset local data if UI breaks or cache is corrupted.
+                </p>
+              </div>
+              <span className="badge border-red-500/30 bg-red-500/10 text-red-200">
+                Warning
+              </span>
+            </div>
+
+            <div className="divider my-6" />
+
+            <button
+              className="btn-danger w-full justify-center py-3"
+              onClick={clearLocal}
+            >
+              🧨 Clear Local Storage
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

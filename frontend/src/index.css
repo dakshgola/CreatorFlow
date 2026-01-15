@@ -210,3 +210,25 @@
 .animate-pop-in {
   animation: popIn 0.25s ease-out forwards;
 }
+/* ✅ Fix dropdown clipping / overlap issues globally */
+.glass {
+  overflow: visible !important;
+}
+
+.card {
+  overflow: visible !important;
+}
+
+/* ✅ Fix dropdown layer always on top */
+.dropdown-fix {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 12px;
+  z-index: 99999 !important;
+}
+
+/* ✅ Prevent text overlay inside dropdown */
+.dropdown-fix * {
+  position: relative;
+}

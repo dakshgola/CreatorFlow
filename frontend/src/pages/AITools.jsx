@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import useApi from "../hooks/useApi";
+import PageShell from "../components/PageShell";
 
 const AITools = () => {
   // =============================
-  // Prefill from History
+  // Prefill from History (optional)
   // =============================
   const getPrefillData = () => {
     try {
@@ -54,12 +55,6 @@ const AITools = () => {
       : { topic: "", tone: "motivational", count: 3 }
   );
 
-  const [hashtagsForm, setHashtagsForm] = useState(
-    prefillData?.tab === "hashtags" && prefillData.formData
-      ? prefillData.formData
-      : { niche: "", count: 15 }
-  );
-
   // =============================
   // APIs
   // =============================
@@ -67,11 +62,11 @@ const AITools = () => {
   const hooksApi = useApi("/ai/hooks", { method: "POST", immediate: false });
   const scriptsApi = useApi("/ai/scripts", { method: "POST", immediate: false });
   const captionsApi = useApi("/ai/captions", { method: "POST", immediate: false });
-  const hashtagsApi = useApi("/ai/hashtags", { method: "POST", immediate: false });
+
   const projectsApi = useApi("/projects", { method: "POST", immediate: false });
 
   // =============================
-  // Current API (stable)
+  // Current API
   // =============================
   const currentApi = (() => {
     switch (activeTab) {
@@ -83,8 +78,6 @@ const AITools = () => {
         return scriptsApi;
       case "captions":
         return captionsApi;
-      case "hashtags":
-        return hashtagsApi;
       default:
         return null;
     }
@@ -93,191 +86,132 @@ const AITools = () => {
   const loading = currentApi?.loading || false;
 
   // =============================
-  // Generate
+  // Generate handler
   // =============================
   const handleGenerate = async () => {
     let body = {};
 
-    switch (activeTab) {
-      case "ideas":
-        if (!ideasForm.prompt || !ideasForm.niche) {
-          toast.error("Please fill in prompt and niche");
-          return;
-        }
-        body = {
-          prompt: ideasForm.prompt,
-          niche: ideasForm.niche,
-          count: Number(ideasForm.count) || 5,
-        };
-        setCurrentEndpoint("ideas");
-        await ideasApi.callApi({ body });
-        break;
+    if (activeTab === "ideas") {
+      if (!ideasForm.prompt || !ideasForm.niche) {
+        toast.error("Please fill prompt and niche");
+        return;
+      }
 
-      case "hooks":
-        if (!hooksForm.topic) {
-          toast.error("Please fill in topic");
-          return;
-        }
-        body = {
-          topic: hooksForm.topic,
-          count: Number(hooksForm.count) || 5,
-        };
-        setCurrentEndpoint("hooks");
-        await hooksApi.callApi({ body });
-        break;
+      body = {
+        prompt: ideasForm.prompt,
+        niche: ideasForm.niche,
+        count: Number(ideasForm.count) || 5,
+      };
 
-      case "scripts":
-        if (!scriptsForm.topic) {
-          toast.error("Please fill in topic");
-          return;
-        }
-        body = {
-          topic: scriptsForm.topic,
-          length: scriptsForm.length,
-        };
-        setCurrentEndpoint("scripts");
-        await scriptsApi.callApi({ body });
-        break;
+      setCurrentEndpoint("ideas");
+      await ideasApi.callApi({ body });
+      return;
+    }
 
-      case "captions":
-        if (!captionsForm.topic) {
-          toast.error("Please fill in topic");
-          return;
-        }
-        body = {
-          topic: captionsForm.topic,
-          tone: captionsForm.tone,
-          count: Number(captionsForm.count) || 3,
-        };
-        setCurrentEndpoint("captions");
-        await captionsApi.callApi({ body });
-        break;
+    if (activeTab === "hooks") {
+      if (!hooksForm.topic) {
+        toast.error("Please fill topic");
+        return;
+      }
 
-      case "hashtags":
-        if (!hashtagsForm.niche) {
-          toast.error("Please fill in niche");
-          return;
-        }
-        body = {
-          niche: hashtagsForm.niche,
-          count: Number(hashtagsForm.count) || 15,
-        };
-        setCurrentEndpoint("hashtags");
-        await hashtagsApi.callApi({ body });
-        break;
+      body = {
+        topic: hooksForm.topic,
+        count: Number(hooksForm.count) || 5,
+      };
 
-      default:
-        break;
+      setCurrentEndpoint("hooks");
+      await hooksApi.callApi({ body });
+      return;
+    }
+
+    if (activeTab === "scripts") {
+      if (!scriptsForm.topic) {
+        toast.error("Please fill topic");
+        return;
+      }
+
+      body = {
+        topic: scriptsForm.topic,
+        length: scriptsForm.length,
+      };
+
+      setCurrentEndpoint("scripts");
+      await scriptsApi.callApi({ body });
+      return;
+    }
+
+    if (activeTab === "captions") {
+      if (!captionsForm.topic) {
+        toast.error("Please fill topic");
+        return;
+      }
+
+      body = {
+        topic: captionsForm.topic,
+        tone: captionsForm.tone,
+        count: Number(captionsForm.count) || 3,
+      };
+
+      setCurrentEndpoint("captions");
+      await captionsApi.callApi({ body });
+      return;
     }
   };
 
   // =============================
-  // Prefill Toast
+  // Results handler
   // =============================
   useEffect(() => {
-    if (prefillData) toast.success("Form prefilled from history!");
-    // eslint-disable-next-line
-  }, []);
+    if (!currentApi) return;
 
-  // =============================
-  // Results Handler (FIXED)
-  // =============================
-   useEffect(() => {
-  if (!currentApi) return;
+    if (currentApi.data?.success && currentApi.data.data) {
+      const raw = currentApi.data.data;
+      const formatted = Array.isArray(raw) ? raw : [raw];
 
-  if (currentApi.data?.success) {
-    const raw = currentApi.data.data;
-
-    if (currentEndpoint === "hashtags") {
-      let tags = [];
-
-      if (Array.isArray(raw)) {
-        tags = raw;
-      } else if (raw?.hashtags && Array.isArray(raw.hashtags)) {
-        tags = raw.hashtags;
-      } else if (typeof raw === "string") {
-        tags = raw
-          .split(/[,#\n]/)
-          .map((t) => t.trim())
-          .filter(Boolean);
-      } else if (raw && typeof raw === "object") {
-        const firstArray = Object.values(raw).find((v) => Array.isArray(v));
-        if (Array.isArray(firstArray)) tags = firstArray;
-      }
-
-      tags = tags
-        .map((t) => String(t).trim().replace(/^#/, ""))
-        .filter(Boolean);
-
-      if (tags.length === 0) {
-        toast.error("No hashtags generated. Please try again.");
-        setResults([]);
-        return;
-      }
-
-      setResults([tags]);
-      toast.success("Hashtags generated!");
+      setResults(formatted);
+      toast.success("Generated successfully!");
       return;
     }
 
-    const formatted = Array.isArray(raw) ? raw : [raw];
-    setResults(formatted);
-    toast.success("AI generated successfully!");
-    return;
-  }
+    if (currentApi.error) {
+      toast.error(currentApi.error || "Failed to generate");
+      setResults([]);
+      return;
+    }
 
-  if (currentApi.error) {
-    toast.error(currentApi.error || "Failed to generate");
-    setResults([]);
-    return;
-  }
-
-  if (currentApi.data && currentApi.data.success === false) {
-    toast.error(currentApi.data.message || "Request failed");
-    setResults([]);
-  }
-}, [currentApi?.data, currentApi?.error, currentEndpoint]);
-
+    if (currentApi.data && currentApi.data.success === false) {
+      toast.error(currentApi.data.message || "Request failed");
+      setResults([]);
+    }
+  }, [currentApi?.data, currentApi?.error]);
 
   // =============================
-  // Save to Planner
+  // Save to planner
   // =============================
   const saveToPlanner = async (item) => {
+    if (!currentEndpoint) return;
+
     let projectData = { status: "Idea" };
 
-    switch (currentEndpoint) {
-      case "ideas":
-      case "hooks":
-        projectData.title = String(item).slice(0, 50);
-        projectData.script = item;
-        break;
+    if (currentEndpoint === "ideas" || currentEndpoint === "hooks") {
+      projectData.title = String(item).slice(0, 60);
+      projectData.script = item;
+    }
 
-      case "scripts":
-        projectData.title = "AI Script";
-        projectData.script = item;
-        break;
+    if (currentEndpoint === "scripts") {
+      projectData.title = "AI Script";
+      projectData.script = item;
+    }
 
-      case "captions":
-        projectData.title = "AI Caption";
-        projectData.captions = [item];
-        break;
-
-      case "hashtags":
-        projectData.title = "AI Hashtags";
-        projectData.hashtags = Array.isArray(item) ? item : [item];
-        break;
-
-      default:
-        return;
+    if (currentEndpoint === "captions") {
+      projectData.title = "AI Captions";
+      projectData.captions = [item];
     }
 
     await projectsApi.callApi({ body: projectData });
 
-    if (projectsApi.data?.success) {
-      toast.success("Saved to Planner!");
-    } else {
-      toast.error(projectsApi.data?.message || "Save failed");
-    }
+    if (projectsApi.data?.success) toast.success("Saved to Planner!");
+    else toast.error(projectsApi.data?.message || "Save failed");
   };
 
   // =============================
@@ -285,12 +219,7 @@ const AITools = () => {
   // =============================
   const copyToClipboard = async (item) => {
     try {
-      const text =
-        currentEndpoint === "hashtags"
-          ? (Array.isArray(item) ? item : [item]).map((t) => `#${t}`).join(" ")
-          : String(item);
-
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(String(item));
       toast.success("Copied!");
     } catch {
       toast.error("Clipboard blocked");
@@ -298,62 +227,58 @@ const AITools = () => {
   };
 
   // =============================
-  // Render Result
+  // Form UI per tab
   // =============================
-  const formatResult = (item) => {
-    if (currentEndpoint === "hashtags") {
-      return (
-        <div className="flex flex-wrap gap-2">
-          {(Array.isArray(item) ? item : [item]).map((tag, i) => (
-            <span
-              key={i}
-              className="bg-indigo-600/20 border border-indigo-500/30 px-4 py-1.5 rounded-full text-sm text-white"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      );
-    }
-
-    return <pre className="text-slate-300 whitespace-pre-wrap">{String(item)}</pre>;
-  };
-
-  // =============================
-  // UI: Forms (✅ MAIN FIX)
-  // =============================
-  const renderForm = () => {
+  const renderTabForm = () => {
     if (activeTab === "ideas") {
       return (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+        <div className="card p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-white font-bold text-lg">Idea Generator</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Generate viral short-form content ideas for your niche.
+              </p>
+            </div>
+            <span className="badge badge-indigo">Ideas</span>
+          </div>
+
+          <div className="divider my-6" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <label className="text-sm text-slate-300">Prompt</label>
               <textarea
+                className="textarea mt-2"
+                placeholder="Example: Give me content ideas for Indian college fitness creators..."
                 value={ideasForm.prompt}
-                onChange={(e) => setIdeasForm({ ...ideasForm, prompt: e.target.value })}
-                className="mt-2 w-full min-h-[110px] bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="What do you want ideas for?"
+                onChange={(e) =>
+                  setIdeasForm((p) => ({ ...p, prompt: e.target.value }))
+                }
               />
             </div>
 
             <div>
               <label className="text-sm text-slate-300">Niche</label>
               <input
+                className="input mt-2"
+                placeholder="fitness / fashion / photography"
                 value={ideasForm.niche}
-                onChange={(e) => setIdeasForm({ ...ideasForm, niche: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="fitness / tech / fashion..."
+                onChange={(e) =>
+                  setIdeasForm((p) => ({ ...p, niche: e.target.value }))
+                }
               />
 
               <label className="text-sm text-slate-300 block mt-4">Count</label>
               <input
+                className="input mt-2"
                 type="number"
-                value={ideasForm.count}
-                onChange={(e) => setIdeasForm({ ...ideasForm, count: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
                 min={1}
-                max={50}
+                max={30}
+                value={ideasForm.count}
+                onChange={(e) =>
+                  setIdeasForm((p) => ({ ...p, count: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -363,26 +288,43 @@ const AITools = () => {
 
     if (activeTab === "hooks") {
       return (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+        <div className="card p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-white font-bold text-lg">Hook Generator</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Create viral hooks that make people stop scrolling.
+              </p>
+            </div>
+            <span className="badge badge-violet">Hooks</span>
+          </div>
+
+          <div className="divider my-6" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <label className="text-sm text-slate-300">Topic</label>
               <input
+                className="input mt-2"
+                placeholder="Example: How I stopped procrastinating"
                 value={hooksForm.topic}
-                onChange={(e) => setHooksForm({ ...hooksForm, topic: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="Eg: How I built discipline in 7 days"
+                onChange={(e) =>
+                  setHooksForm((p) => ({ ...p, topic: e.target.value }))
+                }
               />
             </div>
+
             <div>
               <label className="text-sm text-slate-300">Count</label>
               <input
+                className="input mt-2"
                 type="number"
-                value={hooksForm.count}
-                onChange={(e) => setHooksForm({ ...hooksForm, count: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
                 min={1}
-                max={50}
+                max={30}
+                value={hooksForm.count}
+                onChange={(e) =>
+                  setHooksForm((p) => ({ ...p, count: e.target.value }))
+                }
               />
             </div>
           </div>
@@ -392,24 +334,40 @@ const AITools = () => {
 
     if (activeTab === "scripts") {
       return (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+        <div className="card p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-white font-bold text-lg">Script Writer</p>
+              <p className="text-sm text-slate-400 mt-1">
+                Generate ready-to-shoot scripts with hook + value + CTA.
+              </p>
+            </div>
+            <span className="badge badge-indigo">Scripts</span>
+          </div>
+
+          <div className="divider my-6" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
               <label className="text-sm text-slate-300">Topic</label>
               <input
+                className="input mt-2"
+                placeholder="Example: Build discipline as a student"
                 value={scriptsForm.topic}
-                onChange={(e) => setScriptsForm({ ...scriptsForm, topic: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="Eg: Productivity + college life"
+                onChange={(e) =>
+                  setScriptsForm((p) => ({ ...p, topic: e.target.value }))
+                }
               />
             </div>
 
             <div>
               <label className="text-sm text-slate-300">Length</label>
               <select
+                className="input mt-2"
                 value={scriptsForm.length}
-                onChange={(e) => setScriptsForm({ ...scriptsForm, length: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
+                onChange={(e) =>
+                  setScriptsForm((p) => ({ ...p, length: e.target.value }))
+                }
               >
                 <option value="short">short</option>
                 <option value="medium">medium</option>
@@ -421,88 +379,92 @@ const AITools = () => {
       );
     }
 
-    if (activeTab === "captions") {
-      return (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm text-slate-300">Topic</label>
-              <input
-                value={captionsForm.topic}
-                onChange={(e) => setCaptionsForm({ ...captionsForm, topic: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="Eg: Cinematic edit / fitness / travel"
-              />
-            </div>
+    // captions
+    return (
+      <div className="card p-6">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-white font-bold text-lg">Caption Generator</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Generate clean captions for reels, edits, and posts.
+            </p>
+          </div>
+          <span className="badge badge-violet">Captions</span>
+        </div>
 
-            <div>
-              <label className="text-sm text-slate-300">Tone</label>
-              <select
-                value={captionsForm.tone}
-                onChange={(e) => setCaptionsForm({ ...captionsForm, tone: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-              >
-                <option value="motivational">motivational</option>
-                <option value="funny">funny</option>
-                <option value="aesthetic">aesthetic</option>
-                <option value="professional">professional</option>
-              </select>
+        <div className="divider my-6" />
 
-              <label className="text-sm text-slate-300 block mt-4">Count</label>
-              <input
-                type="number"
-                value={captionsForm.count}
-                onChange={(e) => setCaptionsForm({ ...captionsForm, count: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                min={1}
-                max={20}
-              />
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <label className="text-sm text-slate-300">Topic</label>
+            <input
+              className="input mt-2"
+              placeholder="Example: Cinematic travel edit"
+              value={captionsForm.topic}
+              onChange={(e) =>
+                setCaptionsForm((p) => ({ ...p, topic: e.target.value }))
+              }
+            />
+          </div>
+
+          <div>
+            <label className="text-sm text-slate-300">Tone</label>
+            <select
+              className="input mt-2"
+              value={captionsForm.tone}
+              onChange={(e) =>
+                setCaptionsForm((p) => ({ ...p, tone: e.target.value }))
+              }
+            >
+              <option value="motivational">motivational</option>
+              <option value="aesthetic">aesthetic</option>
+              <option value="professional">professional</option>
+              <option value="funny">funny</option>
+            </select>
+
+            <label className="text-sm text-slate-300 block mt-4">Count</label>
+            <input
+              className="input mt-2"
+              type="number"
+              min={1}
+              max={20}
+              value={captionsForm.count}
+              onChange={(e) =>
+                setCaptionsForm((p) => ({ ...p, count: e.target.value }))
+              }
+            />
           </div>
         </div>
-      );
-    }
-
-    if (activeTab === "hashtags") {
-      return (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm text-slate-300">Niche</label>
-              <input
-                value={hashtagsForm.niche}
-                onChange={(e) => setHashtagsForm({ ...hashtagsForm, niche: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                placeholder="Eg: fitness, coding, photography..."
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-slate-300">Count</label>
-              <input
-                type="number"
-                value={hashtagsForm.count}
-                onChange={(e) => setHashtagsForm({ ...hashtagsForm, count: e.target.value })}
-                className="mt-2 w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white outline-none"
-                min={1}
-                max={50}
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
+      </div>
+    );
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-slate-950 min-h-screen">
-      <h1 className="text-3xl font-bold text-white mb-6">AI Tools</h1>
+    <div>
+      <PageShell
+        title="AI Tools"
+        subtitle="Generate ideas, hooks, scripts and captions in a premium SaaS workflow."
+        right={
+          <>
+            <button
+              className="btn-secondary"
+              onClick={() => {
+                setResults([]);
+                toast.success("Cleared results");
+              }}
+            >
+              🧹 Clear
+            </button>
+            <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
+              {loading ? "Generating..." : "✨ Generate"}
+            </button>
+          </>
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto">
-        {["ideas", "hooks", "scripts", "captions", "hashtags"].map((tab) => (
+        {["ideas", "hooks", "scripts", "captions"].map((tab) => (
           <button
             key={tab}
             onClick={() => {
@@ -510,10 +472,10 @@ const AITools = () => {
               setResults([]);
               setCurrentEndpoint(null);
             }}
-            className={`px-4 py-2 rounded-lg capitalize ${
+            className={`px-4 py-2 rounded-xl capitalize border transition ${
               activeTab === tab
-                ? "bg-indigo-600 text-white"
-                : "bg-slate-800 text-slate-400"
+                ? "bg-indigo-600/20 text-white border-indigo-500/30"
+                : "bg-slate-900/40 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800/40"
             }`}
           >
             {tab}
@@ -521,43 +483,83 @@ const AITools = () => {
         ))}
       </div>
 
-      {/* ✅ Input Form Area */}
-      {renderForm()}
+      {/* Grid Layout */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Left: form */}
+        <div className="space-y-6">{renderTabForm()}</div>
 
-      {/* Generate Button */}
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        className={`px-6 py-3 rounded-lg text-white mb-6 ${
-          loading ? "bg-indigo-600/60" : "bg-indigo-600 hover:bg-indigo-500"
-        }`}
-      >
-        {loading ? "Generating..." : "Generate"}
-      </button>
-
-      {/* Results */}
-      <div className="space-y-4">
-        {results.map((item, idx) => (
-          <div key={idx} className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-            {formatResult(item)}
-
-            <div className="flex gap-3 mt-3">
-              <button
-                onClick={() => copyToClipboard(item)}
-                className="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700"
-              >
-                Copy
-              </button>
-
-              <button
-                onClick={() => saveToPlanner(item)}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-500"
-              >
-                Save
-              </button>
+        {/* Right: output */}
+        <div className="card p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">Generated Output</h2>
+              <p className="text-sm text-slate-400 mt-1">
+                Your results will appear here. Copy or save them to Planner.
+              </p>
             </div>
+
+            <span className="badge badge-indigo">
+              {results.length} items
+            </span>
           </div>
-        ))}
+
+          <div className="divider my-6" />
+
+          {/* Empty state */}
+          {results.length === 0 && !loading && (
+            <div className="rounded-2xl bg-slate-950/40 border border-slate-800 p-6">
+              <p className="text-white font-semibold">No results yet</p>
+              <p className="text-sm text-slate-400 mt-2">
+                Fill the form on the left and click{" "}
+                <span className="text-indigo-300 font-semibold">Generate</span>.
+              </p>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-2xl bg-slate-950/40 border border-slate-800 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Results */}
+          {!loading && results.length > 0 && (
+            <div className="space-y-4">
+              {results.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-slate-950/40 border border-slate-800 p-4"
+                >
+                  <pre className="whitespace-pre-wrap text-slate-200 text-sm">
+                    {String(item)}
+                  </pre>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <button
+                      className="btn-secondary"
+                      onClick={() => copyToClipboard(item)}
+                    >
+                      📋 Copy
+                    </button>
+
+                    <button
+                      className="btn-primary"
+                      onClick={() => saveToPlanner(item)}
+                    >
+                      ✅ Save to Planner
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,602 +1,315 @@
-import { useState } from 'react';
-import { toast } from 'react-hot-toast';
-import useApi from '../hooks/useApi.js';
+import React, { useMemo, useState } from "react";
+import PageShell from "../components/PageShell";
 
 const Clients = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    niche: '',
-    paymentRate: '',
-    notes: '',
-    links: [],
+  // Demo data (replace later with API)
+  const [clients, setClients] = useState([
+    {
+      id: "1",
+      name: "Nike India",
+      category: "Sports",
+      platform: "Instagram",
+      status: "Active",
+      budget: 50000,
+      lastUpdate: "2h ago",
+    },
+    {
+      id: "2",
+      name: "Boat Lifestyle",
+      category: "Tech",
+      platform: "YouTube",
+      status: "Pending",
+      budget: 20000,
+      lastUpdate: "1 day ago",
+    },
+    {
+      id: "3",
+      name: "Zomato",
+      category: "Food",
+      platform: "Instagram",
+      status: "Closed",
+      budget: 35000,
+      lastUpdate: "1 week ago",
+    },
+  ]);
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Modal state
+  const [open, setOpen] = useState(false);
+  const [newClient, setNewClient] = useState({
+    name: "",
+    category: "",
+    platform: "Instagram",
+    status: "Active",
+    budget: "",
   });
-  const [linkInput, setLinkInput] = useState({ platform: '', url: '' });
 
-  // Fetch clients
-  const { data: clientsData, loading, error, callApi: fetchClients } = useApi('/clients', {
-    immediate: true,
-  });
+  const filteredClients = useMemo(() => {
+    return clients.filter((c) => {
+      const matchSearch =
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.category.toLowerCase().includes(search.toLowerCase()) ||
+        c.platform.toLowerCase().includes(search.toLowerCase());
 
-  // Create client
-  const { callApi: createClient, loading: creating } = useApi('/clients', {
-    method: 'POST',
-  });
+      const matchStatus =
+        statusFilter === "all" ? true : c.status.toLowerCase() === statusFilter;
 
-  // Update client
-  const { callApi: updateClient, loading: updating } = useApi('', {
-    method: 'PUT',
-  });
-
-  // Delete client
-  const { callApi: deleteClient, loading: deleting } = useApi('', {
-    method: 'DELETE',
-  });
-
-  const clients = clientsData?.data || [];
-
-  // Handle form input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'paymentRate' ? parseFloat(value) || 0 : value,
-    }));
-  };
-
-  // Add link to form
-  const handleAddLink = () => {
-    if (linkInput.platform && linkInput.url) {
-      setFormData((prev) => ({
-        ...prev,
-        links: [...prev.links, { ...linkInput }],
-      }));
-      setLinkInput({ platform: '', url: '' });
-    }
-  };
-
-  // Remove link from form
-  const handleRemoveLink = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      links: prev.links.filter((_, i) => i !== index),
-    }));
-  };
-
-  // Open modal for adding new client
-  const handleAddClient = () => {
-    setEditingClient(null);
-    setFormData({
-      name: '',
-      niche: '',
-      paymentRate: '',
-      notes: '',
-      links: [],
+      return matchSearch && matchStatus;
     });
-    setLinkInput({ platform: '', url: '' });
-    setIsModalOpen(true);
+  }, [clients, search, statusFilter]);
+
+  const statusBadge = (status) => {
+    if (status === "Active") return "badge badge-green";
+    if (status === "Pending") return "badge badge-violet";
+    return "badge badge-indigo";
   };
 
-  // Open modal for editing client
-  const handleEditClient = (client) => {
-    setEditingClient(client);
-    setFormData({
-      name: client.name || '',
-      niche: client.niche || '',
-      paymentRate: client.paymentRate || '',
-      notes: client.notes || '',
-      links: client.links || [],
-    });
-    setIsModalOpen(true);
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleAddClient = (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.niche || !formData.paymentRate) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+    if (!newClient.name.trim()) return;
 
-    try {
-      if (editingClient) {
-        // Update existing client
-        const result = await updateClient({
-          endpoint: `/clients/${editingClient._id}`,
-          body: formData,
-        });
+    const payload = {
+      id: Date.now().toString(),
+      name: newClient.name.trim(),
+      category: newClient.category.trim() || "General",
+      platform: newClient.platform,
+      status: newClient.status,
+      budget: Number(newClient.budget) || 0,
+      lastUpdate: "just now",
+    };
 
-        if (result.success) {
-          toast.success('Client updated successfully');
-          setIsModalOpen(false);
-          fetchClients();
-        } else {
-          toast.error(result.error || 'Failed to update client');
-        }
-      } else {
-        // Create new client
-        const result = await createClient({
-          body: formData,
-        });
+    setClients((p) => [payload, ...p]);
+    setOpen(false);
 
-        if (result.success) {
-          toast.success('Client created successfully');
-          setIsModalOpen(false);
-          setFormData({
-            name: '',
-            niche: '',
-            paymentRate: '',
-            notes: '',
-            links: [],
-          });
-          fetchClients();
-        } else {
-          toast.error(result.error || 'Failed to create client');
-        }
-      }
-    } catch (err) {
-      toast.error('An error occurred. Please try again.');
-    }
+    setNewClient({
+      name: "",
+      category: "",
+      platform: "Instagram",
+      status: "Active",
+      budget: "",
+    });
   };
-
-  // Handle delete client
-  const handleDeleteClient = async (clientId) => {
-    if (!window.confirm('Are you sure you want to delete this client?')) {
-      return;
-    }
-
-    try {
-      const result = await deleteClient({
-        endpoint: `/clients/${clientId}`,
-      });
-
-      if (result.success) {
-        toast.success('Client deleted successfully');
-        fetchClients();
-      } else {
-        toast.error(result.error || 'Failed to delete client');
-      }
-    } catch (err) {
-      toast.error('An error occurred. Please try again.');
-    }
-  };
-
-  // Format currency (Indian Rupees)
-  const formatCurrency = (amount) => {
-    return `₹${amount.toLocaleString('en-IN')}`;
-  };
-
-  if (loading && clients.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-3 border-slate-800 border-t-indigo-600 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading brand clients...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-slate-950 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <PageShell
+        title="Brand Clients"
+        subtitle="Manage client deals, track status and plan content collaborations like a SaaS CRM."
+        right={
+          <>
+            <button className="btn-secondary" onClick={() => setClients([])}>
+              🧹 Clear Demo
+            </button>
+            <button className="btn-primary" onClick={() => setOpen(true)}>
+              ➕ Add Client
+            </button>
+          </>
+        }
+      />
+
+      {/* Filters */}
+      <div className="card p-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className="text-sm text-slate-300">Search</label>
+            <input
+              className="input mt-2"
+              placeholder="Search by brand, category, platform..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              Brand Clients
-            </h1>
-            <p className="text-slate-400 text-sm">
-              Manage your brand relationships and track payments
+            <label className="text-sm text-slate-300">Status</label>
+            <select
+              className="input mt-2"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">all</option>
+              <option value="active">active</option>
+              <option value="pending">pending</option>
+              <option value="closed">closed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card p-0 overflow-hidden">
+        <div className="p-5 border-b border-slate-800/70 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-white font-bold text-lg">Clients</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Showing {filteredClients.length} of {clients.length}
             </p>
           </div>
-          <button
-            onClick={handleAddClient}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-semibold rounded-xl transition-all duration-200 ease-out flex items-center justify-center space-x-2 shadow-md shadow-indigo-500/30 hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            <span>Add Client</span>
-          </button>
+
+          <span className="badge badge-indigo">CRM View</span>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
-            {error}
-          </div>
-        )}
+        {filteredClients.length === 0 ? (
+          <div className="p-10 text-center">
+            <p className="text-white font-bold text-lg">No clients found</p>
+            <p className="text-sm text-slate-400 mt-2">
+              Try changing filters or add a new client.
+            </p>
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-800">
-              <thead className="bg-slate-800/50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                  >
-                    Name
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                  >
-                    Niche
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                  >
-                    Payment Rate
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                  >
-                    Actions
-                  </th>
+            <button className="btn-primary mt-6" onClick={() => setOpen(true)}>
+              ➕ Add your first client
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto scrollbar-saas">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-950/40">
+                <tr className="text-slate-400">
+                  <th className="text-left p-4 font-semibold">Brand</th>
+                  <th className="text-left p-4 font-semibold">Category</th>
+                  <th className="text-left p-4 font-semibold">Platform</th>
+                  <th className="text-left p-4 font-semibold">Budget</th>
+                  <th className="text-left p-4 font-semibold">Status</th>
+                  <th className="text-left p-4 font-semibold">Last Update</th>
                 </tr>
               </thead>
-              <tbody className="bg-slate-900/60 divide-y divide-slate-800">
-                {clients.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center">
-                      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8">
-                        <p className="text-slate-400 text-lg">No brand clients yet ? your first brand deal is coming ??</p>
-                      </div>
+
+              <tbody>
+                {filteredClients.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="border-t border-slate-800/70 hover:bg-slate-900/40 transition"
+                  >
+                    <td className="p-4">
+                      <p className="text-white font-semibold">{c.name}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Client ID: {c.id}
+                      </p>
                     </td>
+
+                    <td className="p-4 text-slate-300">{c.category}</td>
+                    <td className="p-4 text-slate-300">{c.platform}</td>
+                    <td className="p-4 text-slate-300">
+                      ₹{c.budget.toLocaleString("en-IN")}
+                    </td>
+
+                    <td className="p-4">
+                      <span className={statusBadge(c.status)}>
+                        {c.status}
+                      </span>
+                    </td>
+
+                    <td className="p-4 text-slate-400">{c.lastUpdate}</td>
                   </tr>
-                ) : (
-                  clients.map((client) => (
-                    <tr
-                      key={client._id}
-                      className="hover:bg-slate-800/50 transition-colors duration-200 ease-out"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-white">
-                          {client.name}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-300">
-                          {client.niche}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white font-semibold">
-                          {formatCurrency(client.paymentRate)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEditClient(client)}
-                            className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
-                            title="Edit"
-                          >
-                            <svg
-                              className="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClient(client._id)}
-                            disabled={deleting}
-                            className="text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors duration-200"
-                            title="Delete"
-                          >
-                            <svg
-                              className="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-4">
-          {clients.length === 0 ? (
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-8 text-center">
-              <p className="text-slate-400 text-lg">No brand clients yet — your first brand deal is coming 💼</p>
-            </div>
-          ) : (
-            clients.map((client) => (
-              <div
-                key={client._id}
-                className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.01] transition-all duration-200 ease-out"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    {client.name}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEditClient(client)}
-                      className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClient(client._id)}
-                      disabled={deleting}
-                      className="text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors duration-200"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2 text-sm text-slate-300">
-                    <svg
-                      className="h-4 w-4 text-slate-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                    <span>{client.niche}</span>
-                  </div>
-                  <div className="text-sm font-semibold text-white">
-                    {formatCurrency(client.paymentRate)}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Add/Edit Client Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 md:p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-white">
-                  {editingClient ? 'Edit Brand Client' : 'Add New Brand Client'}
-                </h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-slate-400 hover:text-white transition-colors duration-200"
-                >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+      {/* Modal */}
+      {open && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setOpen(false)}
+          />
+
+          <div className="relative w-full max-w-lg card p-6 animate-pop-in">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Add Client</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Add a new brand and start managing deals.
+                </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Name <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
-                    placeholder="Brand or client name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Niche <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="niche"
-                    value={formData.niche}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
-                    placeholder="e.g., Tech, Fashion, Food"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Payment Rate (₹) <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="paymentRate"
-                    value={formData.paymentRate}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.01"
-                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
-                    placeholder="Enter amount in ₹"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    rows="3"
-                    className="w-full p-3.5 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out resize-none"
-                    placeholder="Additional notes about this brand client"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Links
-                  </label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Platform (e.g., Instagram)"
-                        value={linkInput.platform}
-                        onChange={(e) =>
-                          setLinkInput({ ...linkInput, platform: e.target.value })
-                        }
-                        className="flex-1 p-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
-                      />
-                      <input
-                        type="url"
-                        placeholder="URL"
-                        value={linkInput.url}
-                        onChange={(e) =>
-                          setLinkInput({ ...linkInput, url: e.target.value })
-                        }
-                        className="flex-1 p-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-white placeholder-slate-500 transition-all duration-200 ease-out"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddLink}
-                        className="px-4 py-3 bg-slate-800/50 border border-slate-700 text-slate-300 rounded-xl hover:bg-slate-800 transition-all duration-200 ease-out font-medium"
-                      >
-                        Add
-                      </button>
-                    </div>
-                    {formData.links.length > 0 && (
-                      <div className="space-y-2">
-                        {formData.links.map((link, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between bg-slate-800/50 border border-slate-700 px-3 py-2 rounded-xl"
-                          >
-                            <span className="text-sm text-slate-300">
-                              <strong>{link.platform}:</strong> {link.url}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveLink(index)}
-                              className="text-red-400 hover:text-red-300 transition-colors duration-200"
-                            >
-                              <svg
-                                className="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-6 py-3 bg-slate-800/50 border border-slate-700 text-slate-300 rounded-xl hover:bg-slate-800 transition-all duration-200 ease-out font-semibold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating || updating}
-                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-out font-semibold shadow-md shadow-indigo-500/30 hover:shadow-lg"
-                  >
-                    {creating || updating
-                      ? 'Saving...'
-                      : editingClient
-                      ? 'Update Client'
-                      : 'Create Client'}
-                  </button>
-                </div>
-              </form>
+              <button className="btn-ghost" onClick={() => setOpen(false)}>
+                ✖
+              </button>
             </div>
+
+            <div className="divider my-6" />
+
+            <form onSubmit={handleAddClient} className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-300">Brand Name</label>
+                <input
+                  className="input mt-2"
+                  placeholder="Example: Puma India"
+                  value={newClient.name}
+                  onChange={(e) =>
+                    setNewClient((p) => ({ ...p, name: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-300">Category</label>
+                <input
+                  className="input mt-2"
+                  placeholder="Example: Fitness / Food / Tech"
+                  value={newClient.category}
+                  onChange={(e) =>
+                    setNewClient((p) => ({ ...p, category: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-slate-300">Platform</label>
+                  <select
+                    className="input mt-2"
+                    value={newClient.platform}
+                    onChange={(e) =>
+                      setNewClient((p) => ({ ...p, platform: e.target.value }))
+                    }
+                  >
+                    <option>Instagram</option>
+                    <option>YouTube</option>
+                    <option>Twitter</option>
+                    <option>LinkedIn</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-300">Status</label>
+                  <select
+                    className="input mt-2"
+                    value={newClient.status}
+                    onChange={(e) =>
+                      setNewClient((p) => ({ ...p, status: e.target.value }))
+                    }
+                  >
+                    <option>Active</option>
+                    <option>Pending</option>
+                    <option>Closed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-300">Budget (₹)</label>
+                  <input
+                    className="input mt-2"
+                    type="number"
+                    placeholder="5000"
+                    value={newClient.budget}
+                    onChange={(e) =>
+                      setNewClient((p) => ({ ...p, budget: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <button className="btn-primary w-full py-3">
+                ✅ Add Client
+              </button>
+            </form>
           </div>
         </div>
       )}

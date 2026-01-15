@@ -1,424 +1,355 @@
-import { useState } from 'react';
-import React from "react";
+import React, { useMemo, useState } from "react";
+import PageShell from "../components/PageShell";
 
 const Tasks = () => {
-  // Dummy task data
+  // Demo tasks (replace later with API)
   const [tasks, setTasks] = useState([
     {
-      id: 1,
-      title: 'Create social media content calendar',
-      clientName: 'Sarah Johnson',
-      dueDate: '2024-01-15',
-      priority: 'high',
-      completed: false,
+      id: "t1",
+      title: "Edit cinematic reel for Blinkit campaign",
+      status: "Todo",
+      priority: "High",
+      due: "Today",
     },
     {
-      id: 2,
-      title: 'Design landing page mockup',
-      clientName: 'Michael Chen',
-      dueDate: '2024-01-20',
-      priority: 'medium',
-      completed: false,
+      id: "t2",
+      title: "Send client update to Nike India",
+      status: "Doing",
+      priority: "Medium",
+      due: "Tomorrow",
     },
     {
-      id: 3,
-      title: 'Write blog post about AI trends',
-      clientName: 'Emily Rodriguez',
-      dueDate: '2024-01-18',
-      priority: 'high',
-      completed: false,
+      id: "t3",
+      title: "Plan content calendar for next week",
+      status: "Todo",
+      priority: "Low",
+      due: "This week",
     },
     {
-      id: 4,
-      title: 'Update website copy',
-      clientName: 'David Thompson',
-      dueDate: '2024-01-25',
-      priority: 'low',
-      completed: true,
-    },
-    {
-      id: 5,
-      title: 'Review and approve marketing materials',
-      clientName: 'Jessica Williams',
-      dueDate: '2024-01-22',
-      priority: 'medium',
-      completed: false,
-    },
-    {
-      id: 6,
-      title: 'Schedule client meeting',
-      clientName: 'Robert Martinez',
-      dueDate: '2024-01-16',
-      priority: 'low',
-      completed: false,
+      id: "t4",
+      title: "Finalize captions for travel edit",
+      status: "Done",
+      priority: "Low",
+      due: "Completed",
     },
   ]);
 
-  const handleToggleComplete = (taskId) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+
+  // Modal
+  const [open, setOpen] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    status: "Todo",
+    priority: "Medium",
+    due: "This week",
+  });
+
+  const statusBadge = (status) => {
+    if (status === "Todo") return "badge badge-indigo";
+    if (status === "Doing") return "badge badge-violet";
+    return "badge badge-green";
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+  const priorityBadge = (priority) => {
+    if (priority === "High") return "badge border-red-500/30 bg-red-500/10 text-red-200";
+    if (priority === "Medium") return "badge border-yellow-500/30 bg-yellow-500/10 text-yellow-200";
+    return "badge border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const matchSearch = t.title.toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        statusFilter === "all" ? true : t.status.toLowerCase() === statusFilter;
+      const matchPriority =
+        priorityFilter === "all"
+          ? true
+          : t.priority.toLowerCase() === priorityFilter;
+
+      return matchSearch && matchStatus && matchPriority;
+    });
+  }, [tasks, search, statusFilter, priorityFilter]);
+
+  const grouped = useMemo(() => {
+    return {
+      Todo: filteredTasks.filter((t) => t.status === "Todo"),
+      Doing: filteredTasks.filter((t) => t.status === "Doing"),
+      Done: filteredTasks.filter((t) => t.status === "Done"),
+    };
+  }, [filteredTasks]);
+
+  const handleAddTask = (e) => {
+    e.preventDefault();
+
+    if (!newTask.title.trim()) return;
+
+    const payload = {
+      id: Date.now().toString(),
+      title: newTask.title.trim(),
+      status: newTask.status,
+      priority: newTask.priority,
+      due: newTask.due,
+    };
+
+    setTasks((p) => [payload, ...p]);
+    setOpen(false);
+
+    setNewTask({
+      title: "",
+      status: "Todo",
+      priority: "Medium",
+      due: "This week",
     });
   };
 
-  const getPriorityBadge = (priority) => {
-    const baseClasses = 'px-3 py-1 rounded-full text-xs font-medium';
-    
-    switch (priority) {
-      case 'high':
-        return `${baseClasses} bg-red-500/20 text-red-400 border border-red-500/30`;
-      case 'medium':
-        return `${baseClasses} bg-yellow-500/20 text-yellow-400 border border-yellow-500/30`;
-      case 'low':
-        return `${baseClasses} bg-green-500/20 text-green-400 border border-green-500/30`;
-      default:
-        return `${baseClasses} bg-slate-700 text-slate-300 border border-slate-600`;
-    }
+  const updateTaskStatus = (id, status) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status } : t))
+    );
   };
 
-  const getPriorityLabel = (priority) => {
-    return priority.charAt(0).toUpperCase() + priority.slice(1);
+  const deleteTask = (id) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
   };
-
-  const isOverdue = (dueDate) => {
-    return new Date(dueDate) < new Date() && !tasks.find(t => t.dueDate === dueDate)?.completed;
-  };
-
-  // Separate completed and incomplete tasks
-  const incompleteTasks = tasks.filter((task) => !task.completed);
-  const completedTasks = tasks.filter((task) => task.completed);
 
   return (
-    <div className="min-h-screen bg-slate-950 transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            Tasks
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Manage your tasks and track progress
-          </p>
-        </div>
+    <div>
+      <PageShell
+        title="Tasks"
+        subtitle="Manage your daily creator workflow like a real SaaS project board."
+        right={
+          <>
+            <button className="btn-secondary" onClick={() => setTasks([])}>
+              🧹 Clear Demo
+            </button>
+            <button className="btn-primary" onClick={() => setOpen(true)}>
+              ➕ Add Task
+            </button>
+          </>
+        }
+      />
 
-        {/* Incomplete Tasks */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">
-            Active Tasks ({incompleteTasks.length})
-          </h2>
-          
-          {/* Desktop Table View */}
-          <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-800">
-                <thead className="bg-slate-800/50">
-                  <tr>
-                    <th scope="col" className="w-12 px-6 py-3"></th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                    >
-                      Title
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                    >
-                      Client Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                    >
-                      Due Date
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                    >
-                      Priority
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-slate-900/60 divide-y divide-slate-800">
-                  {incompleteTasks.map((task) => (
-                    <tr
-                      key={task.id}
-                      className="hover:bg-slate-800/50 transition-all duration-200 ease-out"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => handleToggleComplete(task.id)}
-                          className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer bg-slate-800/50"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">
-                          {task.title}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-300">
-                          {task.clientName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div
-                          className={`text-sm ${
-                            isOverdue(task.dueDate)
-                              ? 'text-red-400 font-medium'
-                              : 'text-slate-300'
-                          }`}
-                        >
-                          {formatDate(task.dueDate)}
-                          {isOverdue(task.dueDate) && (
-                            <span className="ml-2 text-xs">(Overdue)</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={getPriorityBadge(task.priority)}>
-                          {getPriorityLabel(task.priority)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      {/* Filters */}
+      <div className="card p-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2">
+            <label className="text-sm text-slate-300">Search</label>
+            <input
+              className="input mt-2"
+              placeholder="Search tasks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
 
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {incompleteTasks.map((task) => (
-              <div
-                key={task.id}
-                className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ease-out"
-              >
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => handleToggleComplete(task.id)}
-                    className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer flex-shrink-0 bg-slate-800/50"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-medium text-white mb-2">
-                      {task.title}
-                    </h3>
-                    <div className="space-y-1">
-                      <div className="flex items-center text-sm text-slate-300">
-                        <svg
-                          className="h-4 w-4 mr-2 text-slate-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                        {task.clientName}
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div
-                          className={`text-sm ${
-                            isOverdue(task.dueDate)
-                              ? 'text-red-400 font-medium'
-                              : 'text-slate-300'
-                          }`}
-                        >
-                          <svg
-                            className="h-4 w-4 inline mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          {formatDate(task.dueDate)}
-                          {isOverdue(task.dueDate) && (
-                            <span className="ml-1">(Overdue)</span>
-                          )}
-                        </div>
-                        <span className={getPriorityBadge(task.priority)}>
-                          {getPriorityLabel(task.priority)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Completed Tasks */}
-        {completedTasks.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-4">
-              Completed Tasks ({completedTasks.length})
-            </h2>
-            
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden opacity-60">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-800">
-                  <thead className="bg-slate-800/50">
-                    <tr>
-                      <th scope="col" className="w-12 px-6 py-3"></th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                      >
-                        Title
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                      >
-                        Client Name
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                      >
-                        Due Date
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
-                      >
-                        Priority
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-slate-900/60 divide-y divide-slate-800">
-                    {completedTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="hover:bg-slate-800/50 transition-all duration-200 ease-out"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={task.completed}
-                            onChange={() => handleToggleComplete(task.id)}
-                            className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer bg-slate-800/50"
-                          />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-slate-500 line-through">
-                            {task.title}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-slate-500">
-                            {task.clientName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-slate-500">
-                            {formatDate(task.dueDate)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={getPriorityBadge(task.priority)}>
-                            {getPriorityLabel(task.priority)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <label className="text-sm text-slate-300">Status</label>
+            <select
+              className="input mt-2"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">all</option>
+              <option value="todo">todo</option>
+              <option value="doing">doing</option>
+              <option value="done">done</option>
+            </select>
+          </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-4">
-              {completedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 opacity-75"
-                >
-                  <div className="flex items-start space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => handleToggleComplete(task.id)}
-                      className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded cursor-pointer flex-shrink-0 bg-slate-800/50"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-medium text-gray-500 dark:text-gray-400 line-through mb-2">
-                        {task.title}
-                      </h3>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                          <svg
-                            className="h-4 w-4 mr-2"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                            />
-                          </svg>
-                          {task.clientName}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-slate-500">
-                            <svg
-                              className="h-4 w-4 inline mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            {formatDate(task.dueDate)}
-                          </div>
-                          <span className={getPriorityBadge(task.priority)}>
-                            {getPriorityLabel(task.priority)}
-                          </span>
-                        </div>
-                      </div>
+          <div>
+            <label className="text-sm text-slate-300">Priority</label>
+            <select
+              className="input mt-2"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="all">all</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Board */}
+      {filteredTasks.length === 0 ? (
+        <div className="card p-10 text-center">
+          <p className="text-white font-bold text-lg">No tasks found</p>
+          <p className="text-sm text-slate-400 mt-2">
+            Add a task or change filters.
+          </p>
+          <button className="btn-primary mt-6" onClick={() => setOpen(true)}>
+            ➕ Create task
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {["Todo", "Doing", "Done"].map((col) => (
+            <div key={col} className="card p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-white font-bold text-lg">{col}</p>
+                <span className="badge badge-indigo">{grouped[col].length}</span>
+              </div>
+
+              <div className="divider my-4" />
+
+              <div className="space-y-3">
+                {grouped[col].map((t) => (
+                  <div
+                    key={t.id}
+                    className="rounded-2xl bg-slate-950/40 border border-slate-800 p-4 hover:bg-slate-900/40 transition"
+                  >
+                    <p className="text-white font-semibold">{t.title}</p>
+
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className={statusBadge(t.status)}>{t.status}</span>
+                      <span className={priorityBadge(t.priority)}>
+                        {t.priority}
+                      </span>
+                      <span className="badge border-slate-700 bg-slate-800/40 text-slate-200">
+                        ⏰ {t.due}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      {t.status !== "Todo" && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => updateTaskStatus(t.id, "Todo")}
+                        >
+                          ↩ Todo
+                        </button>
+                      )}
+
+                      {t.status !== "Doing" && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => updateTaskStatus(t.id, "Doing")}
+                        >
+                          ▶ Doing
+                        </button>
+                      )}
+
+                      {t.status !== "Done" && (
+                        <button
+                          className="btn-primary"
+                          onClick={() => updateTaskStatus(t.id, "Done")}
+                        >
+                          ✅ Done
+                        </button>
+                      )}
+
+                      <button
+                        className="btn-danger"
+                        onClick={() => deleteTask(t.id)}
+                      >
+                        🗑 Delete
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {open && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setOpen(false)}
+          />
+
+          <div className="relative w-full max-w-lg card p-6 animate-pop-in">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Add Task</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Create a new task and track progress.
+                </p>
+              </div>
+
+              <button className="btn-ghost" onClick={() => setOpen(false)}>
+                ✖
+              </button>
+            </div>
+
+            <div className="divider my-6" />
+
+            <form onSubmit={handleAddTask} className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-300">Task title</label>
+                <input
+                  className="input mt-2"
+                  placeholder="Example: Edit reel for client"
+                  value={newTask.title}
+                  onChange={(e) =>
+                    setNewTask((p) => ({ ...p, title: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-slate-300">Status</label>
+                  <select
+                    className="input mt-2"
+                    value={newTask.status}
+                    onChange={(e) =>
+                      setNewTask((p) => ({ ...p, status: e.target.value }))
+                    }
+                  >
+                    <option>Todo</option>
+                    <option>Doing</option>
+                    <option>Done</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-300">Priority</label>
+                  <select
+                    className="input mt-2"
+                    value={newTask.priority}
+                    onChange={(e) =>
+                      setNewTask((p) => ({ ...p, priority: e.target.value }))
+                    }
+                  >
+                    <option>Low</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm text-slate-300">Due</label>
+                  <select
+                    className="input mt-2"
+                    value={newTask.due}
+                    onChange={(e) =>
+                      setNewTask((p) => ({ ...p, due: e.target.value }))
+                    }
+                  >
+                    <option>Today</option>
+                    <option>Tomorrow</option>
+                    <option>This week</option>
+                    <option>Next week</option>
+                  </select>
+                </div>
+              </div>
+
+              <button className="btn-primary w-full py-3">
+                ✅ Add Task
+              </button>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

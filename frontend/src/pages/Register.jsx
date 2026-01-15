@@ -1,152 +1,128 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { register } = useAuth();
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate('/dashboard');
-    return null;
-  }
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!form.name || !form.email || !form.password) {
+      toast.error("Please fill all fields");
       return;
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (form.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
     setLoading(true);
-
-    const result = await register({ name, email, password });
-
-    if (result.success) {
-      navigate('/dashboard');
-    } else {
-      setError(result.message || 'Registration failed. Please try again.');
-    }
-
+    const res = await register(form);
     setLoading(false);
+
+    if (res?.success) {
+      toast.success("Account created!");
+      navigate("/dashboard");
+    } else {
+      toast.error(res?.message || "Registration failed");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+    <div className="min-h-screen flex items-center justify-center px-5">
+      <div className="w-full max-w-md card p-6 md:p-8 animate-pop-in">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center font-extrabold text-white text-xl shadow-lg shadow-indigo-500/20">
+            CF
+          </div>
+          <h1 className="text-2xl font-extrabold text-white mt-4">
             Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Or{' '}
-            <Link
-              to="/login"
-              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
-            >
-              sign in to your existing account
-            </Link>
+          </h1>
+          <p className="text-sm text-slate-400 mt-2">
+            Start planning content, clients, and tasks in one place.
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
-              {error}
-            </div>
-          )}
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                autoComplete="name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700"
-                placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700"
-                placeholder="At least 6 characters"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white dark:bg-gray-700"
-                placeholder="Confirm your password"
-              />
-            </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm text-slate-300">Full Name</label>
+            <input
+              className="input mt-2"
+              name="name"
+              type="text"
+              placeholder="Daksh Gola"
+              value={form.name}
+              onChange={handleChange}
+              autoComplete="name"
+            />
           </div>
 
           <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              {loading ? 'Creating account...' : 'Create account'}
-            </button>
+            <label className="text-sm text-slate-300">Email</label>
+            <input
+              className="input mt-2"
+              name="email"
+              type="email"
+              placeholder="you@email.com"
+              value={form.email}
+              onChange={handleChange}
+              autoComplete="email"
+            />
           </div>
+
+          <div>
+            <label className="text-sm text-slate-300">Password</label>
+            <input
+              className="input mt-2"
+              name="password"
+              type="password"
+              placeholder="Minimum 6 characters"
+              value={form.password}
+              onChange={handleChange}
+              autoComplete="new-password"
+            />
+          </div>
+
+          <button
+            disabled={loading}
+            className={`w-full btn-primary py-3 ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Creating..." : "Create Account"}
+          </button>
         </form>
+
+        {/* Footer */}
+        <div className="divider my-6" />
+
+        <p className="text-sm text-slate-400 text-center">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-indigo-300 hover:text-white font-semibold"
+          >
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );
