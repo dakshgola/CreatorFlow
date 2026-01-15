@@ -35,10 +35,14 @@ const app = express();
 // CORS (simple + guaranteed to work)
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "http://localhost:5173",
+      "https://creator-flow-livid.vercel.app"
+    ],
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
