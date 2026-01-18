@@ -1,17 +1,10 @@
+// useApi.js
 import { useState, useCallback, useEffect } from "react";
 
 /**
- * ✅ API Base URL
- * Local:  http://localhost:5000
- * Prod:   https://creatorflow-i5ev.onrender.com
- *
- * IMPORTANT:
- * In Vercel Environment Variables add:
- * VITE_API_BASE_URL = https://creatorflow-i5ev.onrender.com
+ * ✅ API Base URL - Production Ready
  */
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000")
-  .toString()
-  .replace(/\/$/, "");
+const API_BASE_URL = "https://creatorflow-i5ev.onrender.com";
 
 /**
  * Custom API hook
@@ -72,9 +65,13 @@ const useApi = (endpoint, options = {}) => {
           if (token) requestHeaders.Authorization = `Bearer ${token}`;
         }
 
-        const res = await fetch(buildUrl(finalEndpoint), {
+        const url = buildUrl(finalEndpoint);
+        console.log("🔗 Calling API:", url);
+
+        const res = await fetch(url, {
           method: finalMethod,
           headers: requestHeaders,
+          credentials: 'include',
           body:
             ["POST", "PUT", "PATCH", "DELETE"].includes(finalMethod) && finalBody
               ? JSON.stringify(finalBody)
@@ -99,6 +96,7 @@ const useApi = (endpoint, options = {}) => {
       } catch (err) {
         const msg = err?.message || "Unknown error";
         setError(msg);
+        console.error("❌ API Error:", msg);
         return { success: false, error: msg };
       } finally {
         setLoading(false);
