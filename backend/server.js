@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -27,28 +26,38 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-// Connect DB (will exit if connection fails)
+// Connect DB
 connectDB();
 
 const app = express();
 
-// CORS - Updated for production
+// ✅ FIXED: CORS — covers all Vercel preview URLs + production URL
+//    Add any new Vercel URLs here if they change
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://creator-flow-livid.vercel.app",        // ✅ Your production Vercel URL
+  // Add any vercel preview URLs here if needed, e.g.:
+  // "https://creator-flow-git-main-yourusername.vercel.app"
+];
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "https://creator-flow-livid.vercel.app"
-      ];
-      
-      // Allow requests with no origin (mobile apps, Postman, etc.)
+      // Allow requests with no origin (mobile apps, Postman, curl etc.)
       if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'The CORS policy does not allow access from the specified Origin.';
-        return callback(new Error(msg), false);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      return callback(null, true);
+
+      // ✅ Also allow all *.vercel.app preview deployments for your project
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      console.warn(`🚫 CORS blocked origin: ${origin}`);
+      return callback(new Error(`CORS policy does not allow origin: ${origin}`), false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -56,14 +65,21 @@ app.use(
   })
 );
 
+// ✅ Handle preflight OPTIONS requests globally (important for cross-origin auth)
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ---------------------
-// TEST ROUTES
+// HEALTH CHECK ROUTES
 // ---------------------
 app.get("/", (req, res) => {
   res.json({ success: true, message: "CreatorFlow API is running!" });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, message: "API healthy", timestamp: new Date().toISOString() });
 });
 
 app.get("/api/auth/test", (req, res) => {
@@ -81,7 +97,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
-// ---- OPTIONAL (delete these if unused) ----
+// ---- OPTIONAL (delete if unused) ----
 app.use("/api/tasks", projectRoutes);
 app.use("/api/payments", projectRoutes);
 
@@ -90,6 +106,12 @@ app.use("/api/payments", projectRoutes);
 // ---------------------
 app.use((err, req, res, next) => {
   console.error("Error:", err);
+
+  // ✅ Handle CORS errors cleanly
+  if (err.message && err.message.startsWith('CORS policy')) {
+    return res.status(403).json({ success: false, message: err.message });
+  }
+
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Server error",
@@ -102,7 +124,7 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 });
 
@@ -111,13 +133,12 @@ app.use((req, res) => {
 // ---------------------
 const PORT = process.env.PORT || 5000;
 
-// Only start server after MongoDB connection is established
-// (connectDB() will exit process if connection fails, so if we reach here, DB is connected)
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✅ MongoDB: Connected`);
   console.log(`✅ Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
-  console.log(`✅ Cloudinary: ${process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME.trim() !== '') ? 'Configured' : 'Not configured (optional)'}`);
+  console.log(`✅ Cloudinary: ${process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured (optional)'}`);
+  console.log(`✅ Allowed CORS Origins: ${allowedOrigins.join(', ')}`);
 });
