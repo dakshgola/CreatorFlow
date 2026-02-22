@@ -31,27 +31,27 @@ connectDB();
 
 const app = express();
 
-// ✅ FIXED: CORS — covers all Vercel preview URLs + production URL
-//    Add any new Vercel URLs here if they change
+// Allowed origins list
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "https://creator-flow-livid.vercel.app",        // ✅ Your production Vercel URL
-  // Add any vercel preview URLs here if needed, e.g.:
-  // "https://creator-flow-git-main-yourusername.vercel.app"
+  "https://creator-flow-livid.vercel.app",
 ];
 
+// ✅ FIXED: Removed app.options('*', cors()) — it crashes on Node.js v22
+// app.use(cors()) already handles OPTIONS preflight requests automatically
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (mobile apps, Postman, curl etc.)
       if (!origin) return callback(null, true);
 
+      // Allow exact origin matches
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // ✅ Also allow all *.vercel.app preview deployments for your project
+      // Allow ALL *.vercel.app preview deployment URLs
       if (origin.endsWith(".vercel.app")) {
         return callback(null, true);
       }
@@ -64,9 +64,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-
-// ✅ Handle preflight OPTIONS requests globally (important for cross-origin auth)
-app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -107,7 +104,7 @@ app.use("/api/payments", projectRoutes);
 app.use((err, req, res, next) => {
   console.error("Error:", err);
 
-  // ✅ Handle CORS errors cleanly
+  // Handle CORS errors cleanly
   if (err.message && err.message.startsWith('CORS policy')) {
     return res.status(403).json({ success: false, message: err.message });
   }
@@ -140,5 +137,5 @@ app.listen(PORT, () => {
   console.log(`✅ MongoDB: Connected`);
   console.log(`✅ Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
   console.log(`✅ Cloudinary: ${process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured (optional)'}`);
-  console.log(`✅ Allowed CORS Origins: ${allowedOrigins.join(', ')}`);
+  console.log(`✅ Allowed CORS Origins: ${allowedOrigins.join(', ')} + *.vercel.app`);
 });
