@@ -1,10 +1,10 @@
-// useApi.js
 import { useState, useCallback, useEffect } from "react";
 
-/**
- * ✅ API Base URL - Production Ready
- */
-const API_BASE_URL = "https://creatorflow-i5ev.onrender.com";
+// ✅ FIXED: Use env variable — NOT hardcoded URL
+//    Local .env:           VITE_API_URL=http://localhost:5000/api
+//    Vercel env vars:      VITE_API_URL=https://creatorflow-i5ev.onrender.com/api
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 /**
  * Custom API hook
@@ -28,15 +28,21 @@ const useApi = (endpoint, options = {}) => {
   /** ✅ Get token safely */
   const getToken = () => localStorage.getItem("token");
 
-  /** ✅ Build full URL */
+  /** ✅ Build full URL — avoids double /api prefix */
   const buildUrl = (ep) => {
     if (!ep) return API_BASE_URL;
 
-    // If endpoint already full URL, return as-is
+    // If endpoint is already a full URL, return as-is
     if (ep.startsWith("http://") || ep.startsWith("https://")) return ep;
 
-    // Normal endpoint (/api/auth/login etc.)
-    return `${API_BASE_URL}${ep.startsWith("/") ? ep : `/${ep}`}`;
+    // Strip leading /api from endpoint if API_BASE_URL already ends with /api
+    // This prevents double /api/api/... URLs
+    let cleanEndpoint = ep;
+    if (API_BASE_URL.endsWith("/api") && ep.startsWith("/api")) {
+      cleanEndpoint = ep.replace(/^\/api/, "");
+    }
+
+    return `${API_BASE_URL}${cleanEndpoint.startsWith("/") ? cleanEndpoint : `/${cleanEndpoint}`}`;
   };
 
   /** ✅ Make request */
@@ -45,7 +51,6 @@ const useApi = (endpoint, options = {}) => {
       const finalEndpoint = override.endpoint || endpoint;
       const finalMethod = (override.method || method).toUpperCase();
       const finalBody = override.body !== undefined ? override.body : body;
-
       const finalAuth =
         override.authRequired !== undefined ? override.authRequired : authRequired;
 
@@ -71,7 +76,6 @@ const useApi = (endpoint, options = {}) => {
         const res = await fetch(url, {
           method: finalMethod,
           headers: requestHeaders,
-          credentials: 'include',
           body:
             ["POST", "PUT", "PATCH", "DELETE"].includes(finalMethod) && finalBody
               ? JSON.stringify(finalBody)

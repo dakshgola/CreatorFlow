@@ -56,14 +56,14 @@ const AITools = () => {
   );
 
   // =============================
-  // APIs
+  // APIs — ✅ FIXED: added /api/ prefix to all endpoints
   // =============================
-  const ideasApi = useApi("/ai/ideas", { method: "POST", immediate: false });
-  const hooksApi = useApi("/ai/hooks", { method: "POST", immediate: false });
-  const scriptsApi = useApi("/ai/scripts", { method: "POST", immediate: false });
-  const captionsApi = useApi("/ai/captions", { method: "POST", immediate: false });
+  const ideasApi = useApi("/api/ai/ideas", { method: "POST", immediate: false });
+  const hooksApi = useApi("/api/ai/hooks", { method: "POST", immediate: false });
+  const scriptsApi = useApi("/api/ai/scripts", { method: "POST", immediate: false });
+  const captionsApi = useApi("/api/ai/captions", { method: "POST", immediate: false });
 
-  const projectsApi = useApi("/projects", { method: "POST", immediate: false });
+  const projectsApi = useApi("/api/projects", { method: "POST", immediate: false });
 
   // =============================
   // Current API

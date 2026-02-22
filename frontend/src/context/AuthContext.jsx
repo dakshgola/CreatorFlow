@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-// Base API URL
+// ✅ FIXED: Base API URL — VITE_API_URL should be set to full base like:
+//    Local:      http://localhost:5000/api  (in .env)
+//    Production: https://creatorflow-i5ev.onrender.com/api  (in Vercel env vars)
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const AuthProvider = ({ children }) => {
@@ -31,7 +33,9 @@ export const AuthProvider = ({ children }) => {
   const verifyToken = async (authToken) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        method: 'GET',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
       });
@@ -113,8 +117,11 @@ export const AuthProvider = ({ children }) => {
     clearAuth();
   };
 
+  // ✅ fetchWithAuth helper — used by other components needing authenticated requests
   const fetchWithAuth = async (url, options = {}) => {
     const authToken = token || localStorage.getItem('token');
+
+    // If url is already absolute, use it. Otherwise prepend API_BASE_URL
     const fullUrl = url.startsWith('http')
       ? url
       : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
@@ -142,7 +149,8 @@ export const AuthProvider = ({ children }) => {
         fetchWithAuth,
       }}
     >
-      {children}
+      {/* ✅ Block render until auth is resolved — prevents flashing/redirect bugs */}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
