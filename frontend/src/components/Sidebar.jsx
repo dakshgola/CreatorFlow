@@ -1,6 +1,17 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { 
+  LayoutDashboard, 
+  Sparkles, 
+  Users, 
+  CheckSquare, 
+  CalendarDays, 
+  History, 
+  BarChart3, 
+  Settings,
+  Zap
+} from "lucide-react";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -9,39 +20,36 @@ const Sidebar = () => {
   if (!isAuthenticated) return null;
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: "📊" },
-    { name: "AI Tools", href: "/ai-tools", icon: "✨" },
-    { name: "Brand Clients", href: "/clients", icon: "👥" },
-    { name: "Tasks", href: "/tasks", icon: "✅" },
-    { name: "Content Planner", href: "/planner", icon: "📅" },
-    { name: "History", href: "/history", icon: "📜" },
-    { name: "Analytics", href: "/analytics", icon: "📈" },
-    { name: "Settings", href: "/settings", icon: "⚙️" },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "AI Tools", href: "/ai-tools", icon: Sparkles },
+    { name: "Brand Clients", href: "/clients", icon: Users },
+    { name: "Tasks", href: "/tasks", icon: CheckSquare },
+    { name: "Content Planner", href: "/planner", icon: CalendarDays },
+    { name: "History", href: "/history", icon: History },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-72 flex-col z-50">
-      <div className="h-full glass border-r border-slate-800/80">
+    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 flex-col z-50 bg-white border-r border-gray-100">
+      <div className="h-full flex flex-col">
         {/* Brand */}
-        <div className="p-6 border-b border-slate-800/70">
+        <div className="p-6">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white font-extrabold shadow-lg shadow-indigo-500/20">
-              CF
+            <div className="w-8 h-8 rounded bg-gray-900 flex items-center justify-center text-gray-900">
+              <Zap size={18} />
             </div>
             <div>
-              <p className="text-white text-lg font-bold leading-5">
+              <p className="text-gray-900 text-sm font-semibold tracking-tight">
                 CreatorFlow
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                SaaS for creators
               </p>
             </div>
           </Link>
         </div>
 
         {/* Nav */}
-        <nav className="p-4 overflow-y-auto scrollbar-saas flex-1">
-          <p className="text-xs font-semibold text-slate-500 px-3 mb-2">
+        <nav className="px-4 overflow-y-auto scrollbar-saas flex-1">
+          <p className="text-xs font-medium text-gray-400 px-3 mb-3 uppercase tracking-wider">
             Workspace
           </p>
 
@@ -50,19 +58,21 @@ const Sidebar = () => {
               const isActive =
                 location.pathname === item.href ||
                 (item.href === "/dashboard" && location.pathname === "/");
+              
+              const Icon = item.icon;
 
               return (
                 <li key={item.href}>
                   <Link
                     to={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
                       isActive
-                        ? "bg-indigo-600/15 border border-indigo-500/20 text-white shadow-sm shadow-indigo-500/10"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800/40"
+                        ? "bg-gray-50 text-gray-900 font-medium"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                     }`}
                   >
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <Icon size={18} className={isActive ? "text-gray-900" : "text-gray-400"} />
+                    <span className="text-sm">{item.name}</span>
                   </Link>
                 </li>
               );
@@ -71,12 +81,15 @@ const Sidebar = () => {
         </nav>
 
         {/* Footer */}
-       <div className="p-4 border-t border-slate-800">
-  <div className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-3 text-center">
-    <p className="text-xs text-slate-400">Built for</p>
-    <p className="text-sm font-semibold text-white">Indian Creators 🇮🇳</p>
-  </div>
-</div>
+        <div className="p-4 mt-auto">
+          <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-100 flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0" />
+             <div className="flex-1 min-w-0">
+               <p className="text-sm font-medium text-gray-900 truncate">Creator</p>
+               <p className="text-xs text-gray-500 truncate">Pro Plan</p>
+             </div>
+          </div>
+        </div>
 
       </div>
     </aside>

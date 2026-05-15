@@ -3,20 +3,19 @@
 @tailwind utilities;
 
 /* ===============================
-   SaaS UI BASE (CreatorFlow)
+   SaaS UI BASE (CreatorFlow - Minimal/Linear Style)
    =============================== */
 @layer base {
   :root {
-    /* SaaS Theme Tokens */
-    --bg: 222 47% 7%;
-    --card: 222 40% 10%;
-    --muted: 222 28% 16%;
-    --border: 222 18% 22%;
-    --text: 210 40% 98%;
-    --subtext: 215 16% 70%;
-
-    --primary: 243 75% 59%;
-    --primary-2: 270 85% 60%;
+    --bg: 210 40% 98%; /* bg-gray-50 */
+    --card: 0 0% 100%; /* bg-white */
+    --muted: 210 40% 96%;
+    --border: 214 32% 91%; /* gray-200 */
+    --text: 222 47% 11%; /* gray-900 */
+    --subtext: 215 16% 47%; /* gray-500 */
+    
+    --primary: 222 47% 11%; /* gray-900 */
+    --primary-hover: 0 0% 0%; /* black */
     --danger: 0 84% 60%;
     --success: 142 72% 45%;
   }
@@ -26,209 +25,180 @@
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
       "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
       "Helvetica Neue", sans-serif;
-
-    background: radial-gradient(
-        1200px 600px at 10% 10%,
-        rgba(99, 102, 241, 0.18),
-        transparent 55%
-      ),
-      radial-gradient(
-        900px 500px at 90% 15%,
-        rgba(168, 85, 247, 0.16),
-        transparent 60%
-      ),
-      radial-gradient(
-        800px 500px at 40% 90%,
-        rgba(14, 165, 233, 0.10),
-        transparent 60%
-      ),
-      hsl(var(--bg));
-
+    background-color: hsl(var(--bg));
     color: hsl(var(--text));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   * {
-    @apply border-slate-800;
+    @apply border-gray-100;
   }
 }
 
 /* ===============================
-   SCROLLBAR (SaaS style)
+   SCROLLBAR (Minimal)
    =============================== */
 @layer utilities {
   .scrollbar-saas::-webkit-scrollbar {
-    width: 10px;
+    width: 6px;
   }
   .scrollbar-saas::-webkit-scrollbar-track {
-    background: rgba(15, 23, 42, 0.4);
+    background: transparent;
   }
   .scrollbar-saas::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.25);
+    background: rgba(156, 163, 175, 0.5);
     border-radius: 999px;
-    border: 2px solid rgba(15, 23, 42, 0.4);
   }
   .scrollbar-saas::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.35);
+    background: rgba(107, 114, 128, 0.8);
   }
 }
 
 /* ===============================
-   COMPONENT CLASSES (SaaS kit)
+   COMPONENT CLASSES (Minimal SaaS)
    =============================== */
 @layer components {
   /* Container */
   .saas-container {
-    @apply max-w-7xl mx-auto px-6;
+    @apply max-w-7xl mx-auto px-6 lg:px-8;
   }
 
-  /* Gradient text */
+  /* Gradient text mapped to primary text */
   .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(
-      90deg,
-      rgba(99, 102, 241, 1),
-      rgba(168, 85, 247, 1)
-    );
+    @apply text-gray-900 font-semibold;
   }
 
-  /* Glass surfaces */
+  /* Glass surfaces mapped to clean cards */
   .glass {
-    @apply bg-slate-900/50 backdrop-blur-md border border-slate-800/80;
+    @apply bg-white border border-gray-100 shadow-sm;
   }
 
   /* Cards */
   .card {
-    @apply glass rounded-2xl shadow-xl shadow-black/20;
+    @apply bg-white border border-gray-100 rounded-xl shadow-sm;
   }
 
   .card-hover {
-    @apply transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10;
+    @apply transition-all duration-200 hover:border-gray-200 hover:shadow-md;
   }
 
   /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200;
   }
 
   .btn-primary {
-    @apply btn text-white;
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 1),
-      rgba(168, 85, 247, 1)
-    );
-  }
-
-  .btn-primary:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
+    @apply btn bg-gray-900 text-white hover:bg-black;
   }
 
   .btn-secondary {
-    @apply btn bg-slate-800/60 text-slate-200 border border-slate-700/60 hover:bg-slate-800 hover:text-white;
+    @apply btn bg-white text-gray-700 border border-gray-200 hover:bg-gray-50;
   }
 
   .btn-danger {
-    @apply btn bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20;
+    @apply btn bg-white text-red-600 border border-gray-200 hover:bg-red-50 hover:border-red-200;
   }
 
   .btn-ghost {
-    @apply btn bg-transparent text-slate-300 hover:bg-slate-800/50 hover:text-white;
+    @apply btn bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900;
   }
 
   /* Inputs */
   .input {
-    @apply w-full rounded-xl bg-slate-950/60 border border-slate-800 px-4 py-3 text-sm text-white outline-none transition-all duration-200;
+    @apply w-full rounded-lg bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none transition-all duration-200;
   }
 
   .input:focus {
-    border-color: rgba(99, 102, 241, 0.6);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+    @apply border-gray-900 ring-1 ring-gray-900;
+  }
+  
+  .input::placeholder {
+    @apply text-gray-400;
   }
 
   .textarea {
-    @apply input min-h-[120px] resize-none;
+    @apply input min-h-[100px] resize-none;
   }
 
-  /* Badges */
+  /* Badges - using small colored dots as requested */
   .badge {
-    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border;
+    @apply inline-flex items-center gap-1.5 px-0 py-0 text-xs font-medium text-gray-600 bg-transparent border-0;
   }
 
-  .badge-indigo {
-    @apply badge border-indigo-500/30 bg-indigo-500/10 text-indigo-200;
+  .badge::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
   }
 
-  .badge-violet {
-    @apply badge border-violet-500/30 bg-violet-500/10 text-violet-200;
+  .badge-indigo::before {
+    @apply bg-gray-900;
   }
+  .badge-indigo { @apply text-gray-700; }
 
-  .badge-green {
-    @apply badge border-emerald-500/30 bg-emerald-500/10 text-emerald-200;
+  .badge-violet::before {
+    @apply bg-gray-500;
   }
+  .badge-violet { @apply text-gray-600; }
+
+  .badge-green::before, .badge-emerald::before {
+    @apply bg-emerald-500;
+  }
+  .badge-green, .badge-emerald { @apply text-gray-700; }
+
+  .badge-red::before {
+    @apply bg-red-500;
+  }
+  .badge-red { @apply text-gray-700; }
+  
+  .badge-yellow::before {
+    @apply bg-amber-500;
+  }
+  .badge-yellow { @apply text-gray-700; }
 
   /* Divider */
   .divider {
-    @apply border-t border-slate-800/80;
+    @apply border-t border-gray-100;
   }
 }
 
 /* ===============================
    Animations
    =============================== */
-
-/* Fade-in animation */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Smooth pop */
 @keyframes popIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.99); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .animate-pop-in {
-  animation: popIn 0.25s ease-out forwards;
+  animation: popIn 0.2s ease-out forwards;
 }
-/* ✅ Fix dropdown clipping / overlap issues globally */
-.glass {
+
+/* Dropdown fixes */
+.glass, .card {
   overflow: visible !important;
 }
 
-.card {
-  overflow: visible !important;
-}
-
-/* ✅ Fix dropdown layer always on top */
 .dropdown-fix {
   position: absolute;
   right: 0;
   top: 100%;
-  margin-top: 12px;
+  margin-top: 8px;
   z-index: 99999 !important;
 }
 
-/* ✅ Prevent text overlay inside dropdown */
 .dropdown-fix * {
   position: relative;
 }

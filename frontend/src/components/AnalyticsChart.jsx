@@ -10,7 +10,6 @@ import {
 } from "recharts";
 
 const AnalyticsChart = () => {
-  // Demo data (later replace from API)
   const data = [
     { name: "Mon", views: 1200, engagement: 14 },
     { name: "Tue", views: 1900, engagement: 16 },
@@ -22,36 +21,50 @@ const AnalyticsChart = () => {
   ];
 
   return (
-    <div className="h-[320px] w-full rounded-2xl bg-slate-950/40 border border-slate-800 p-4">
+    <div className="h-[280px] w-full mt-2">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
-          <XAxis dataKey="name" stroke="rgba(148,163,184,0.7)" />
-          <YAxis stroke="rgba(148,163,184,0.7)" />
+        <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+          <XAxis 
+            dataKey="name" 
+            stroke="#9ca3af" 
+            fontSize={12} 
+            tickLine={false} 
+            axisLine={false}
+            dy={10}
+          />
+          <YAxis 
+            stroke="#9ca3af" 
+            fontSize={12} 
+            tickLine={false} 
+            axisLine={false}
+            dx={-10}
+          />
           <Tooltip
             contentStyle={{
-              background: "#0f172a",
-              border: "1px solid rgba(148,163,184,0.2)",
-              borderRadius: "12px",
-              color: "#fff",
+              background: "#ffffff",
+              border: "1px solid #f3f4f6",
+              borderRadius: "8px",
+              boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+              color: "#111827",
+              fontSize: "12px",
+              fontWeight: 500
             }}
-            labelStyle={{ color: "#fff" }}
+            itemStyle={{ color: "#111827" }}
+            labelStyle={{ color: "#6b7280", marginBottom: "4px" }}
           />
-
-          {/* Views */}
           <Line
             type="monotone"
             dataKey="views"
-            stroke="#6366f1"
-            strokeWidth={3}
-            dot={false}
+            stroke="#111827"
+            strokeWidth={2}
+            dot={{ r: 3, fill: "#111827", strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: "#111827", strokeWidth: 0 }}
           />
-
-          {/* Engagement */}
           <Line
             type="monotone"
             dataKey="engagement"
-            stroke="#a855f7"
+            stroke="#9ca3af"
             strokeWidth={2}
             dot={false}
           />

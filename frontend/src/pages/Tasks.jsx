@@ -123,7 +123,7 @@ const Tasks = () => {
         right={
           <>
             <button className="btn-secondary" onClick={() => setTasks([])}>
-              🧹 Clear Demo
+              Clear Demo
             </button>
             <button className="btn-primary" onClick={() => setOpen(true)}>
               ➕ Add Task
@@ -136,7 +136,7 @@ const Tasks = () => {
       <div className="card p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <label className="text-sm text-slate-300">Search</label>
+            <label className="text-sm text-gray-600">Search</label>
             <input
               className="input mt-2"
               placeholder="Search tasks..."
@@ -146,7 +146,7 @@ const Tasks = () => {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Status</label>
+            <label className="text-sm text-gray-600">Status</label>
             <select
               className="input mt-2"
               value={statusFilter}
@@ -160,7 +160,7 @@ const Tasks = () => {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Priority</label>
+            <label className="text-sm text-gray-600">Priority</label>
             <select
               className="input mt-2"
               value={priorityFilter}
@@ -178,8 +178,8 @@ const Tasks = () => {
       {/* Board */}
       {filteredTasks.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-white font-bold text-lg">No tasks found</p>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-gray-900 font-bold text-lg">No tasks found</p>
+          <p className="text-sm text-gray-500 mt-2">
             Add a task or change filters.
           </p>
           <button className="btn-primary mt-6" onClick={() => setOpen(true)}>
@@ -191,7 +191,7 @@ const Tasks = () => {
           {["Todo", "Doing", "Done"].map((col) => (
             <div key={col} className="card p-5">
               <div className="flex items-center justify-between">
-                <p className="text-white font-bold text-lg">{col}</p>
+                <p className="text-gray-900 font-bold text-lg">{col}</p>
                 <span className="badge badge-indigo">{grouped[col].length}</span>
               </div>
 
@@ -201,16 +201,16 @@ const Tasks = () => {
                 {grouped[col].map((t) => (
                   <div
                     key={t.id}
-                    className="rounded-2xl bg-slate-950/40 border border-slate-800 p-4 hover:bg-slate-900/40 transition"
+                    className="rounded-2xl bg-white border border-gray-100 p-4 hover:bg-gray-50 transition"
                   >
-                    <p className="text-white font-semibold">{t.title}</p>
+                    <p className="text-gray-900 font-semibold">{t.title}</p>
 
                     <div className="flex flex-wrap gap-2 mt-3">
                       <span className={statusBadge(t.status)}>{t.status}</span>
                       <span className={priorityBadge(t.priority)}>
                         {t.priority}
                       </span>
-                      <span className="badge border-slate-700 bg-slate-800/40 text-slate-200">
+                      <span className="badge border-slate-700 bg-slate-800/40 text-gray-700">
                         ⏰ {t.due}
                       </span>
                     </div>
@@ -269,8 +269,8 @@ const Tasks = () => {
           <div className="relative w-full max-w-lg card p-6 animate-pop-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Add Task</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xl font-bold text-gray-900">Add Task</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Create a new task and track progress.
                 </p>
               </div>
@@ -284,7 +284,7 @@ const Tasks = () => {
 
             <form onSubmit={handleAddTask} className="space-y-4">
               <div>
-                <label className="text-sm text-slate-300">Task title</label>
+                <label className="text-sm text-gray-600">Task title</label>
                 <input
                   className="input mt-2"
                   placeholder="Example: Edit reel for client"
@@ -297,7 +297,7 @@ const Tasks = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-slate-300">Status</label>
+                  <label className="text-sm text-gray-600">Status</label>
                   <select
                     className="input mt-2"
                     value={newTask.status}
@@ -312,7 +312,7 @@ const Tasks = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Priority</label>
+                  <label className="text-sm text-gray-600">Priority</label>
                   <select
                     className="input mt-2"
                     value={newTask.priority}
@@ -327,7 +327,7 @@ const Tasks = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Due</label>
+                  <label className="text-sm text-gray-600">Due</label>
                   <select
                     className="input mt-2"
                     value={newTask.due}

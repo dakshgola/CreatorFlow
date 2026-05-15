@@ -6,6 +6,9 @@ import {
   generateCaptions,
   generateHashtags,
   improveScript,
+  generateContent,
+  getRecentGenerations,
+  generateDigest,
 } from '../controllers/aiController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -61,5 +64,27 @@ router.post('/hashtags', generateHashtags);
  * @body    { script }
  */
 router.post('/improve', improveScript);
+
+/**
+ * @route   POST /api/ai/generate
+ * @desc    Generate full content structured JSON
+ * @access  Private
+ * @body    { topic, niche, platform }
+ */
+router.post('/generate', generateContent);
+
+/**
+ * @route   GET /api/ai/generate
+ * @desc    Get last 5 content generations
+ * @access  Private
+ */
+router.get('/generate', getRecentGenerations);
+
+/**
+ * @route   GET /api/ai/digest
+ * @desc    Generate weekly AI digest
+ * @access  Private
+ */
+router.get('/digest', generateDigest);
 
 export default router;

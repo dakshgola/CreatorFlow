@@ -83,11 +83,11 @@ const Analytics = () => {
           <div key={c.label} className="card card-hover p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">{c.label}</p>
-                <p className="text-3xl font-extrabold text-white mt-2">
+                <p className="text-sm text-gray-500">{c.label}</p>
+                <p className="text-3xl font-extrabold text-gray-900 mt-2">
                   {c.value}
                 </p>
-                <p className="text-xs text-slate-500 mt-2">{c.meta}</p>
+                <p className="text-xs text-gray-400 mt-2">{c.meta}</p>
               </div>
 
               <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center justify-center text-xl">
@@ -104,10 +104,10 @@ const Analytics = () => {
         <div className="xl:col-span-2 card p-6">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-gray-900">
                 Views Trend ({range})
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 Placeholder chart — connect API + Recharts later.
               </p>
             </div>
@@ -117,8 +117,8 @@ const Analytics = () => {
 
           <div className="divider my-6" />
 
-          <div className="h-[320px] rounded-2xl bg-slate-950/40 border border-slate-800 flex items-center justify-center">
-            <p className="text-slate-500 text-sm">📊 Views Chart Placeholder</p>
+          <div className="h-[320px] rounded-2xl bg-white border border-gray-100 flex items-center justify-center">
+            <p className="text-gray-400 text-sm">📊 Views Chart Placeholder</p>
           </div>
         </div>
 
@@ -126,10 +126,10 @@ const Analytics = () => {
         <div className="card p-6">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-gray-900">
                 Platform Breakdown
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 Where your reach comes from.
               </p>
             </div>
@@ -147,11 +147,11 @@ const Analytics = () => {
             ].map((p) => (
               <div
                 key={p.name}
-                className="rounded-2xl bg-slate-950/40 border border-slate-800 p-4"
+                className="rounded-2xl bg-white border border-gray-100 p-4"
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-white font-semibold">{p.name}</p>
-                  <p className="text-sm text-slate-300">{p.value}%</p>
+                  <p className="text-gray-900 font-semibold">{p.name}</p>
+                  <p className="text-sm text-gray-600">{p.value}%</p>
                 </div>
 
                 <div className="mt-3 h-2 rounded-full bg-slate-800 overflow-hidden">

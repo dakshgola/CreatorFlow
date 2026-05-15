@@ -53,7 +53,7 @@ const History = () => {
     if (type === "AI") return "badge badge-violet";
     if (type === "Projects") return "badge badge-indigo";
     if (type === "Auth") return "badge badge-green";
-    return "badge border-slate-700 bg-slate-800/40 text-slate-200";
+    return "badge border-slate-700 bg-slate-800/40 text-gray-700";
   };
 
   const typeDot = (type) => {
@@ -71,7 +71,7 @@ const History = () => {
         right={
           <>
             <button className="btn-secondary" onClick={() => setLogs([])}>
-              🧹 Clear Demo
+              Clear Demo
             </button>
           </>
         }
@@ -81,7 +81,7 @@ const History = () => {
       <div className="card p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <label className="text-sm text-slate-300">Search</label>
+            <label className="text-sm text-gray-600">Search</label>
             <input
               className="input mt-2"
               placeholder="Search history..."
@@ -91,7 +91,7 @@ const History = () => {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Type</label>
+            <label className="text-sm text-gray-600">Type</label>
             <select
               className="input mt-2"
               value={typeFilter}
@@ -111,8 +111,8 @@ const History = () => {
       <div className="card p-6">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-white font-bold text-lg">Activity Log</p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-gray-900 font-bold text-lg">Activity Log</p>
+            <p className="text-sm text-gray-500 mt-1">
               Showing {filtered.length} of {logs.length}
             </p>
           </div>
@@ -123,8 +123,8 @@ const History = () => {
 
         {filtered.length === 0 ? (
           <div className="text-center p-10">
-            <p className="text-white font-bold text-lg">No activity found</p>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-gray-900 font-bold text-lg">No activity found</p>
+            <p className="text-sm text-gray-500 mt-2">
               Try changing filters or search text.
             </p>
           </div>
@@ -144,18 +144,18 @@ const History = () => {
                   </div>
 
                   {/* Card */}
-                  <div className="flex-1 rounded-2xl bg-slate-950/40 border border-slate-800 p-4 hover:bg-slate-900/40 transition">
+                  <div className="flex-1 rounded-2xl bg-white border border-gray-100 p-4 hover:bg-gray-50 transition">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div>
-                        <p className="text-white font-semibold">{log.title}</p>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-gray-900 font-semibold">{log.title}</p>
+                        <p className="text-sm text-gray-500 mt-1">
                           {log.description}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <span className={typeBadge(log.type)}>{log.type}</span>
-                        <span className="text-xs text-slate-500">{log.time}</span>
+                        <span className="text-xs text-gray-400">{log.time}</span>
                       </div>
                     </div>
                   </div>

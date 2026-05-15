@@ -1,5 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import History from "../models/History.js";
+import AIGeneration from "../models/AIGeneration.js";
+import Task from "../models/Task.js";
+import Payment from "../models/Payment.js";
+import Project from "../models/Project.js";
 
 // ❗ Do NOT re-import dotenv here (already loaded in server.js)
 
@@ -269,5 +273,143 @@ ${script}
   } catch (err) {
     console.error("AI IMPROVE ERROR:", err.message);
     res.status(500).json({ success: false, message: err.message || "Failed to improve script" });
+  }
+};
+
+// ===============================
+// 7️⃣ FULL GENERATOR
+// ===============================
+export const generateContent = async (req, res) => {
+  try {
+    const { topic, niche, platform } = req.body;
+    if (!topic || !niche || !platform) {
+      return res.status(400).json({ success: false, message: "Topic, niche, and platform are required" });
+    }
+
+    const model = getModel();
+    const prompt = `You are an expert AI content creator.
+Topic: ${topic}
+Niche: ${niche}
+Platform: ${platform}
+
+Return a JSON object with these exact keys:
+- "title": array of 5 title variations (strings)
+- "hook": array of 3 opening line variations (strings)
+- "scriptOutline": array of 5 sections, where each section is an object with "heading" (string) and "description" (2-line string)
+- "captions": array of 3 caption variations with emojis (strings)
+- "hashtags": array of 15 hashtags (strings)
+
+Respond ONLY with valid JSON. Do not include markdown formatting like \`\`\`json.`;
+
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const responseText = result.response?.text() || '';
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(responseText);
+    } catch (e) {
+      // fallback if model includes markdown
+      const cleaned = responseText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+      parsedResult = JSON.parse(cleaned);
+    }
+
+    // Save to DB
+    const newGen = await AIGeneration.create({
+      userId: req.user.id,
+      topic,
+      niche,
+      platform,
+      result: parsedResult
+    });
+
+    // Keep only last 5 per user
+    const userGens = await AIGeneration.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    if (userGens.length > 5) {
+      const idsToDelete = userGens.slice(5).map(g => g._id);
+      await AIGeneration.deleteMany({ _id: { $in: idsToDelete } });
+    }
+
+    res.json({ success: true, data: newGen });
+  } catch (err) {
+    console.error("AI GENERATOR ERROR:", err.message);
+    res.status(500).json({ success: false, message: err.message || "Failed to generate content" });
+  }
+};
+
+export const getRecentGenerations = async (req, res) => {
+  try {
+    const history = await AIGeneration.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .limit(5);
+    res.json({ success: true, data: history });
+  } catch (err) {
+    console.error("AI FETCH GENERATIONS ERROR:", err.message);
+    res.status(500).json({ success: false, message: "Failed to fetch generations" });
+  }
+};
+
+// ===============================
+// 8️⃣ WEEKLY DIGEST
+// ===============================
+export const generateDigest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // 1. Fetch Tasks
+    const allTasks = await Task.find({ userId });
+    const completedTasks7d = allTasks.filter(t => t.completed && t.updatedAt >= sevenDaysAgo).length;
+    const overdueTasks = allTasks.filter(t => !t.completed && new Date(t.dueDate) < new Date());
+    
+    // 2. Payments
+    const allPayments = await Payment.find({ userId }).populate('clientId', 'name');
+    const paidPayments7d = allPayments.filter(p => p.paid && p.updatedAt >= sevenDaysAgo).reduce((acc, p) => acc + p.amount, 0);
+    const duePayments = allPayments.filter(p => !p.paid).reduce((acc, p) => acc + p.amount, 0);
+    const overduePayments = allPayments.filter(p => !p.paid && new Date(p.dueDate) < new Date());
+    const overdueClientNames = [...new Set(overduePayments.map(p => p.clientId?.name || 'Unknown'))];
+
+    // 3. Planner (Projects)
+    const allProjects = await Project.find({ userId });
+    const stages = { Idea: 0, Scripted: 0, Shot: 0, Edited: 0, Posted: 0 };
+    allProjects.forEach(p => {
+      if (stages[p.status] !== undefined) {
+        stages[p.status]++;
+      }
+    });
+    const mostStuckStage = Object.keys(stages).reduce((a, b) => stages[a] > stages[b] ? a : b);
+
+    // Assemble Data
+    const dataContext = `
+    Tasks:
+    - Completed in last 7 days: ${completedTasks7d}
+    - Currently Overdue: ${overdueTasks.length}
+    - Overdue Task Names: ${overdueTasks.map(t => t.title).join(', ') || 'None'}
+
+    Payments:
+    - Paid in last 7 days: ₹${paidPayments7d}
+    - Total Due: ₹${duePayments}
+    - Overdue Clients: ${overdueClientNames.join(', ') || 'None'}
+
+    Planner:
+    - Items per stage: Idea(${stages.Idea}), Scripted(${stages.Scripted}), Shot(${stages.Shot}), Edited(${stages.Edited}), Posted(${stages.Posted})
+    - Most stuck items are in stage: ${mostStuckStage}
+    `;
+
+    const model = getModel();
+    const result = await model.generateContent(`You are a business assistant. Based on this creator's last 7 days of data, write a concise 4-sentence weekly digest. Be specific with numbers. End with one clear priority action for this week. Tone: direct, professional, no fluff.
+    
+    Data:
+    ${dataContext}`);
+
+    const digestText = result.response?.text() || '';
+
+    res.json({ success: true, data: digestText });
+  } catch (err) {
+    console.error("AI DIGEST ERROR:", err.message);
+    res.status(500).json({ success: false, message: "Failed to generate digest" });
   }
 };

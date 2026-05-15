@@ -36,8 +36,8 @@ const Settings = () => {
           <div className="card p-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 className="text-lg font-bold text-white">Profile</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-gray-900">Profile</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Update your account information.
                 </p>
               </div>
@@ -48,7 +48,7 @@ const Settings = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
-                <label className="text-sm text-slate-300">Full Name</label>
+                <label className="text-sm text-gray-600">Full Name</label>
                 <input
                   className="input mt-2"
                   value={profile.name}
@@ -60,7 +60,7 @@ const Settings = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300">Email</label>
+                <label className="text-sm text-gray-600">Email</label>
                 <input
                   className="input mt-2"
                   value={profile.email}
@@ -84,8 +84,8 @@ const Settings = () => {
           <div className="card p-6">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 className="text-lg font-bold text-white">Security</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-gray-900">Security</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Control session and access.
                 </p>
               </div>
@@ -109,8 +109,8 @@ const Settings = () => {
           <div className="card p-6 border border-red-500/20">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div>
-                <h2 className="text-lg font-bold text-white">Danger Zone</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-lg font-bold text-gray-900">Danger Zone</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Reset local data if UI breaks or cache is corrupted.
                 </p>
               </div>

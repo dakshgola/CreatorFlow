@@ -94,7 +94,7 @@ const Planner = () => {
         right={
           <>
             <button className="btn-secondary" onClick={() => setProjects([])}>
-              🧹 Clear Demo
+              Clear Demo
             </button>
             <button className="btn-primary" onClick={() => setOpen(true)}>
               ➕ Add Project
@@ -105,7 +105,7 @@ const Planner = () => {
 
       {/* Search Bar */}
       <div className="card p-5 mb-6">
-        <label className="text-sm text-slate-300">Search Projects</label>
+        <label className="text-sm text-gray-600">Search Projects</label>
         <input
           className="input mt-2"
           placeholder="Search your content ideas, scripts..."
@@ -117,8 +117,8 @@ const Planner = () => {
       {/* Pipeline Board */}
       {filtered.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-white font-bold text-lg">No projects found</p>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-gray-900 font-bold text-lg">No projects found</p>
+          <p className="text-sm text-gray-500 mt-2">
             Add projects or search something else.
           </p>
           <button className="btn-primary mt-6" onClick={() => setOpen(true)}>
@@ -130,7 +130,7 @@ const Planner = () => {
           {STATUSES.map((col) => (
             <div key={col} className="card p-4">
               <div className="flex items-center justify-between">
-                <p className="text-white font-bold">{col}</p>
+                <p className="text-gray-900 font-bold">{col}</p>
                 <span className="badge badge-indigo">{grouped[col].length}</span>
               </div>
 
@@ -140,12 +140,12 @@ const Planner = () => {
                 {grouped[col].map((p) => (
                   <div
                     key={p.id}
-                    className="rounded-2xl bg-slate-950/40 border border-slate-800 p-4 hover:bg-slate-900/40 transition"
+                    className="rounded-2xl bg-white border border-gray-100 p-4 hover:bg-gray-50 transition"
                   >
-                    <p className="text-white font-semibold">{p.title}</p>
+                    <p className="text-gray-900 font-semibold">{p.title}</p>
 
                     {p.script && (
-                      <p className="text-xs text-slate-400 mt-2 line-clamp-3">
+                      <p className="text-xs text-gray-500 mt-2 line-clamp-3">
                         {p.script}
                       </p>
                     )}
@@ -213,8 +213,8 @@ const Planner = () => {
           <div className="relative w-full max-w-xl card p-6 animate-pop-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Add Project</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xl font-bold text-gray-900">Add Project</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Add a new content idea into your pipeline.
                 </p>
               </div>
@@ -228,7 +228,7 @@ const Planner = () => {
 
             <form onSubmit={handleAddProject} className="space-y-4">
               <div>
-                <label className="text-sm text-slate-300">Title</label>
+                <label className="text-sm text-gray-600">Title</label>
                 <input
                   className="input mt-2"
                   placeholder="Example: Viral gym reel for Instagram"
@@ -241,7 +241,7 @@ const Planner = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm text-slate-300">Status</label>
+                  <label className="text-sm text-gray-600">Status</label>
                   <select
                     className="input mt-2"
                     value={newProject.status}
@@ -256,7 +256,7 @@ const Planner = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">1 Caption</label>
+                  <label className="text-sm text-gray-600">1 Caption</label>
                   <input
                     className="input mt-2"
                     placeholder="Example: Discipline wins 💪"
@@ -269,7 +269,7 @@ const Planner = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300">Script / Notes</label>
+                <label className="text-sm text-gray-600">Script / Notes</label>
                 <textarea
                   className="textarea mt-2"
                   placeholder="Write script or notes..."

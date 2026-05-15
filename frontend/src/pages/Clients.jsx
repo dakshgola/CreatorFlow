@@ -101,7 +101,7 @@ const Clients = () => {
         right={
           <>
             <button className="btn-secondary" onClick={() => setClients([])}>
-              🧹 Clear Demo
+              Clear Demo
             </button>
             <button className="btn-primary" onClick={() => setOpen(true)}>
               ➕ Add Client
@@ -114,7 +114,7 @@ const Clients = () => {
       <div className="card p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <label className="text-sm text-slate-300">Search</label>
+            <label className="text-sm text-gray-600">Search</label>
             <input
               className="input mt-2"
               placeholder="Search by brand, category, platform..."
@@ -124,7 +124,7 @@ const Clients = () => {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Status</label>
+            <label className="text-sm text-gray-600">Status</label>
             <select
               className="input mt-2"
               value={statusFilter}
@@ -141,10 +141,10 @@ const Clients = () => {
 
       {/* Table */}
       <div className="card p-0 overflow-hidden">
-        <div className="p-5 border-b border-slate-800/70 flex items-center justify-between gap-3 flex-wrap">
+        <div className="p-5 border-b border-gray-100/70 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-white font-bold text-lg">Clients</p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-gray-900 font-bold text-lg">Clients</p>
+            <p className="text-sm text-gray-500 mt-1">
               Showing {filteredClients.length} of {clients.length}
             </p>
           </div>
@@ -154,8 +154,8 @@ const Clients = () => {
 
         {filteredClients.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-white font-bold text-lg">No clients found</p>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-gray-900 font-bold text-lg">No clients found</p>
+            <p className="text-sm text-gray-500 mt-2">
               Try changing filters or add a new client.
             </p>
 
@@ -166,8 +166,8 @@ const Clients = () => {
         ) : (
           <div className="overflow-x-auto scrollbar-saas">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950/40">
-                <tr className="text-slate-400">
+              <thead className="bg-white">
+                <tr className="text-gray-500">
                   <th className="text-left p-4 font-semibold">Brand</th>
                   <th className="text-left p-4 font-semibold">Category</th>
                   <th className="text-left p-4 font-semibold">Platform</th>
@@ -181,18 +181,18 @@ const Clients = () => {
                 {filteredClients.map((c) => (
                   <tr
                     key={c.id}
-                    className="border-t border-slate-800/70 hover:bg-slate-900/40 transition"
+                    className="border-t border-gray-100/70 hover:bg-gray-50 transition"
                   >
                     <td className="p-4">
-                      <p className="text-white font-semibold">{c.name}</p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-gray-900 font-semibold">{c.name}</p>
+                      <p className="text-xs text-gray-400 mt-1">
                         Client ID: {c.id}
                       </p>
                     </td>
 
-                    <td className="p-4 text-slate-300">{c.category}</td>
-                    <td className="p-4 text-slate-300">{c.platform}</td>
-                    <td className="p-4 text-slate-300">
+                    <td className="p-4 text-gray-600">{c.category}</td>
+                    <td className="p-4 text-gray-600">{c.platform}</td>
+                    <td className="p-4 text-gray-600">
                       ₹{c.budget.toLocaleString("en-IN")}
                     </td>
 
@@ -202,7 +202,7 @@ const Clients = () => {
                       </span>
                     </td>
 
-                    <td className="p-4 text-slate-400">{c.lastUpdate}</td>
+                    <td className="p-4 text-gray-500">{c.lastUpdate}</td>
                   </tr>
                 ))}
               </tbody>
@@ -222,8 +222,8 @@ const Clients = () => {
           <div className="relative w-full max-w-lg card p-6 animate-pop-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Add Client</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xl font-bold text-gray-900">Add Client</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Add a new brand and start managing deals.
                 </p>
               </div>
@@ -237,7 +237,7 @@ const Clients = () => {
 
             <form onSubmit={handleAddClient} className="space-y-4">
               <div>
-                <label className="text-sm text-slate-300">Brand Name</label>
+                <label className="text-sm text-gray-600">Brand Name</label>
                 <input
                   className="input mt-2"
                   placeholder="Example: Puma India"
@@ -249,7 +249,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300">Category</label>
+                <label className="text-sm text-gray-600">Category</label>
                 <input
                   className="input mt-2"
                   placeholder="Example: Fitness / Food / Tech"
@@ -262,7 +262,7 @@ const Clients = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-slate-300">Platform</label>
+                  <label className="text-sm text-gray-600">Platform</label>
                   <select
                     className="input mt-2"
                     value={newClient.platform}
@@ -278,7 +278,7 @@ const Clients = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Status</label>
+                  <label className="text-sm text-gray-600">Status</label>
                   <select
                     className="input mt-2"
                     value={newClient.status}
@@ -293,7 +293,7 @@ const Clients = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Budget (₹)</label>
+                  <label className="text-sm text-gray-600">Budget (₹)</label>
                   <input
                     className="input mt-2"
                     type="number"

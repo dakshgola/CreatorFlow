@@ -123,7 +123,7 @@ const Payments = () => {
         right={
           <>
             <button className="btn-secondary" onClick={() => setPayments([])}>
-              🧹 Clear Demo
+              Clear Demo
             </button>
             <button className="btn-primary" onClick={() => setOpen(true)}>
               ➕ Add Payment
@@ -135,27 +135,27 @@ const Payments = () => {
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
         <div className="card card-hover p-5">
-          <p className="text-sm text-slate-400">Due</p>
-          <p className="text-3xl font-extrabold text-white mt-2">
+          <p className="text-sm text-gray-500">Due</p>
+          <p className="text-3xl font-extrabold text-gray-900 mt-2">
             ₹{totals.due.toLocaleString("en-IN")}
           </p>
-          <p className="text-xs text-slate-500 mt-2">Needs immediate follow-up</p>
+          <p className="text-xs text-gray-400 mt-2">Needs immediate follow-up</p>
         </div>
 
         <div className="card card-hover p-5">
-          <p className="text-sm text-slate-400">Pending</p>
-          <p className="text-3xl font-extrabold text-white mt-2">
+          <p className="text-sm text-gray-500">Pending</p>
+          <p className="text-3xl font-extrabold text-gray-900 mt-2">
             ₹{totals.pending.toLocaleString("en-IN")}
           </p>
-          <p className="text-xs text-slate-500 mt-2">Waiting confirmation</p>
+          <p className="text-xs text-gray-400 mt-2">Waiting confirmation</p>
         </div>
 
         <div className="card card-hover p-5">
-          <p className="text-sm text-slate-400">Paid</p>
-          <p className="text-3xl font-extrabold text-white mt-2">
+          <p className="text-sm text-gray-500">Paid</p>
+          <p className="text-3xl font-extrabold text-gray-900 mt-2">
             ₹{totals.paid.toLocaleString("en-IN")}
           </p>
-          <p className="text-xs text-slate-500 mt-2">Total collected</p>
+          <p className="text-xs text-gray-400 mt-2">Total collected</p>
         </div>
       </div>
 
@@ -163,7 +163,7 @@ const Payments = () => {
       <div className="card p-5 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <label className="text-sm text-slate-300">Search</label>
+            <label className="text-sm text-gray-600">Search</label>
             <input
               className="input mt-2"
               placeholder="Search client or method..."
@@ -173,7 +173,7 @@ const Payments = () => {
           </div>
 
           <div>
-            <label className="text-sm text-slate-300">Status</label>
+            <label className="text-sm text-gray-600">Status</label>
             <select
               className="input mt-2"
               value={statusFilter}
@@ -190,10 +190,10 @@ const Payments = () => {
 
       {/* Table */}
       <div className="card p-0 overflow-hidden">
-        <div className="p-5 border-b border-slate-800/70 flex items-center justify-between">
+        <div className="p-5 border-b border-gray-100/70 flex items-center justify-between">
           <div>
-            <p className="text-white font-bold text-lg">Invoices / Payments</p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-gray-900 font-bold text-lg">Invoices / Payments</p>
+            <p className="text-sm text-gray-500 mt-1">
               Showing {filtered.length} of {payments.length}
             </p>
           </div>
@@ -202,16 +202,16 @@ const Payments = () => {
 
         {filtered.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-white font-bold text-lg">No payments found</p>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-gray-900 font-bold text-lg">No payments found</p>
+            <p className="text-sm text-gray-500 mt-2">
               Add payments or change filter/search.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-saas">
             <table className="w-full text-sm">
-              <thead className="bg-slate-950/40">
-                <tr className="text-slate-400">
+              <thead className="bg-white">
+                <tr className="text-gray-500">
                   <th className="text-left p-4 font-semibold">Client</th>
                   <th className="text-left p-4 font-semibold">Amount</th>
                   <th className="text-left p-4 font-semibold">Status</th>
@@ -225,14 +225,14 @@ const Payments = () => {
                 {filtered.map((p) => (
                   <tr
                     key={p.id}
-                    className="border-t border-slate-800/70 hover:bg-slate-900/40 transition"
+                    className="border-t border-gray-100/70 hover:bg-gray-50 transition"
                   >
                     <td className="p-4">
-                      <p className="text-white font-semibold">{p.client}</p>
-                      <p className="text-xs text-slate-500 mt-1">ID: {p.id}</p>
+                      <p className="text-gray-900 font-semibold">{p.client}</p>
+                      <p className="text-xs text-gray-400 mt-1">ID: {p.id}</p>
                     </td>
 
-                    <td className="p-4 text-slate-300">
+                    <td className="p-4 text-gray-600">
                       ₹{p.amount.toLocaleString("en-IN")}
                     </td>
 
@@ -240,8 +240,8 @@ const Payments = () => {
                       <span className={badge(p.status)}>{p.status}</span>
                     </td>
 
-                    <td className="p-4 text-slate-400">{p.due}</td>
-                    <td className="p-4 text-slate-300">{p.method}</td>
+                    <td className="p-4 text-gray-500">{p.due}</td>
+                    <td className="p-4 text-gray-600">{p.method}</td>
 
                     <td className="p-4">
                       <div className="flex gap-2 flex-wrap">
@@ -281,8 +281,8 @@ const Payments = () => {
           <div className="relative w-full max-w-lg card p-6 animate-pop-in">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Add Payment</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xl font-bold text-gray-900">Add Payment</h2>
+                <p className="text-sm text-gray-500 mt-1">
                   Track client payouts and pending invoices.
                 </p>
               </div>
@@ -296,7 +296,7 @@ const Payments = () => {
 
             <form onSubmit={handleAddPayment} className="space-y-4">
               <div>
-                <label className="text-sm text-slate-300">Client</label>
+                <label className="text-sm text-gray-600">Client</label>
                 <input
                   className="input mt-2"
                   placeholder="Example: Puma India"
@@ -308,7 +308,7 @@ const Payments = () => {
               </div>
 
               <div>
-                <label className="text-sm text-slate-300">Amount (₹)</label>
+                <label className="text-sm text-gray-600">Amount (₹)</label>
                 <input
                   className="input mt-2"
                   type="number"
@@ -322,7 +322,7 @@ const Payments = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm text-slate-300">Status</label>
+                  <label className="text-sm text-gray-600">Status</label>
                   <select
                     className="input mt-2"
                     value={newPayment.status}
@@ -337,7 +337,7 @@ const Payments = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Due</label>
+                  <label className="text-sm text-gray-600">Due</label>
                   <select
                     className="input mt-2"
                     value={newPayment.due}
@@ -353,7 +353,7 @@ const Payments = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-slate-300">Method</label>
+                  <label className="text-sm text-gray-600">Method</label>
                   <select
                     className="input mt-2"
                     value={newPayment.method}
