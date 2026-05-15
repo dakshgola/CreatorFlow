@@ -1,90 +1,71 @@
 import express from 'express';
+import rateLimit from "express-rate-limit";
 import {
-  generateIdeas,
-  generateHooks,
-  generateScript,
-  generateCaptions,
-  generateHashtags,
-  improveScript,
-  generateContent,
+  generateContentV2,
   getRecentGenerations,
-  generateDigest,
+  generateABTitles,
+  chooseTitle,
+  runContentPipeline,
+  scoreContent,
+  getTrendingHooks
 } from '../controllers/aiController.js';
 import { protect } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { generateSchema, abTitlesSchema, pipelineSchema, scoreSchema } from '../validators/aiValidator.js';
 
 const router = express.Router();
 
-// All routes are protected - require authentication
+// Strict AI Rate Limiter (20 req / hour per userId)
+const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20,
+  keyGenerator: (req) => req.user?.id || req.ip,
+  message: { success: false, message: "AI rate limit exceeded (20 requests per hour). Please upgrade or try again later." }
+});
+
 router.use(protect);
+router.use(aiLimiter);
 
 /**
- * @route   POST /api/ai/ideas
- * @desc    Generate content ideas
- * @access  Private
- * @body    { prompt, niche, count }
+ * @route   POST /api/v1/ai/generate
+ * @desc    Generate script/hook/caption/ideas end-to-end
  */
-router.post('/ideas', generateIdeas);
+router.post('/generate', validate(generateSchema), generateContentV2);
 
 /**
- * @route   POST /api/ai/hooks
- * @desc    Generate attention-grabbing hooks
- * @access  Private
- * @body    { topic, count }
- */
-router.post('/hooks', generateHooks);
-
-/**
- * @route   POST /api/ai/scripts
- * @desc    Generate content script
- * @access  Private
- * @body    { topic, length }
- */
-router.post('/scripts', generateScript);
-
-/**
- * @route   POST /api/ai/captions
- * @desc    Generate social media captions
- * @access  Private
- * @body    { topic, tone, count }
- */
-router.post('/captions', generateCaptions);
-
-/**
- * @route   POST /api/ai/hashtags
- * @desc    Generate hashtags
- * @access  Private
- * @body    { niche, count }
- */
-router.post('/hashtags', generateHashtags);
-
-/**
- * @route   POST /api/ai/improve
- * @desc    Improve existing script
- * @access  Private
- * @body    { script }
- */
-router.post('/improve', improveScript);
-
-/**
- * @route   POST /api/ai/generate
- * @desc    Generate full content structured JSON
- * @access  Private
- * @body    { topic, niche, platform }
- */
-router.post('/generate', generateContent);
-
-/**
- * @route   GET /api/ai/generate
+ * @route   GET /api/v1/ai/generate
  * @desc    Get last 5 content generations
- * @access  Private
  */
 router.get('/generate', getRecentGenerations);
 
 /**
- * @route   GET /api/ai/digest
- * @desc    Generate weekly AI digest
- * @access  Private
+ * @route   POST /api/v1/ai/ab-titles
+ * @desc    Generate 5 A/B titles
  */
-router.get('/digest', generateDigest);
+router.post('/ab-titles', validate(abTitlesSchema), generateABTitles);
+
+/**
+ * @route   POST /api/v1/ai/ab-titles/:sessionId/choose
+ * @desc    Choose a winning title
+ */
+router.post('/ab-titles/:sessionId/choose', chooseTitle);
+
+/**
+ * @route   POST /api/v1/ai/pipeline
+ * @desc    Parallel generate reels/linkedin/twitter/email
+ */
+router.post('/pipeline', validate(pipelineSchema), runContentPipeline);
+
+/**
+ * @route   POST /api/v1/ai/score
+ * @desc    Score content and get fixes
+ */
+router.post('/score', validate(scoreSchema), scoreContent);
+
+/**
+ * @route   GET /api/v1/ai/trending-hooks
+ * @desc    Fetch Reddit trends & generate hooks
+ */
+router.get('/trending-hooks', getTrendingHooks);
 
 export default router;

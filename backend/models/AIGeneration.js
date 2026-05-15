@@ -7,9 +7,13 @@ const aiGenerationSchema = new mongoose.Schema({
     required: true,
   },
   topic: String,
-  niche: String,
+  type: {
+    type: String,
+    enum: ['script', 'hook', 'caption', 'ideas', 'other'],
+    default: 'other'
+  },
   platform: String,
-  result: {
+  output: {
     type: mongoose.Schema.Types.Mixed,
     required: true,
   },

@@ -1,4 +1,5 @@
 import CreatorProfile from "../models/CreatorProfile.js";
+import AIGeneration from "../models/AIGeneration.js";
 
 /**
  * AI Memory Service (Creator Brain)
@@ -11,9 +12,23 @@ export const buildSystemPrompt = async (userId) => {
   try {
     const profile = await CreatorProfile.findOne({ userId });
     
+    // Fetch last 5 generations to maintain consistency
+    const recentGens = await AIGeneration.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    let pastWorkBlock = "";
+    if (recentGens.length > 0) {
+      pastWorkBlock = "\n[PAST SUCCESSFUL CONTENT (Match this style)]\n";
+      recentGens.forEach((gen, index) => {
+        const textPreview = typeof gen.output === "string" ? gen.output.substring(0, 150) : JSON.stringify(gen.output).substring(0, 150);
+        pastWorkBlock += `${index + 1}. Topic: ${gen.topic} | Excerpt: ${textPreview}...\n`;
+      });
+    }
+
     // If no profile exists, return a generic but solid baseline
     if (!profile) {
-      return "You are an expert AI content creator. Deliver concise, high-quality content.";
+      return `You are an expert AI content creator. Deliver concise, high-quality content.${pastWorkBlock}`;
     }
 
     // Deconstruct for cleaner templating
@@ -50,6 +65,7 @@ ${goalsBlock}
 
 ${styleBlock}
 ${negativePromptBlock}
+${pastWorkBlock}
 
 [INSTRUCTIONS]
 Internalize the context above. All outputs must feel handwritten by this specific creator. 
