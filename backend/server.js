@@ -1,7 +1,13 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import dotenv from "dotenv-flow";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import morgan from "morgan";
+import rateLimit from "express-rate-limit";
 import connectDB from "./config/db.js";
+import * as Sentry from "@sentry/node";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 // ROUTES
 import authRoutes from "./routes/auth.js";
@@ -11,8 +17,15 @@ import aiRoutes from "./routes/ai.js";
 import analyticsRoutes from "./routes/analytics.js";
 import historyRoutes from "./routes/history.js";
 import projectRoutes from "./routes/projects.js";
+import profileRoutes from "./routes/profile.js";
+import trendRoutes from "./routes/trends.js";
+import multiplierRoutes from "./routes/multiplier.js";
+import viralityRoutes from "./routes/virality.js";
+import competitorRoutes from "./routes/competitor.js";
+import creatorAnalyticsRoutes from "./routes/creatorAnalytics.js";
+import agentRoutes from "./routes/agent.js";
 
-// Load environment variables FIRST
+// Load environment variables FIRST (dotenv-flow supports .env, .env.development, etc.)
 dotenv.config();
 
 // Validate critical environment variables
@@ -31,31 +44,42 @@ connectDB();
 
 const app = express();
 
-// Allowed origins list
+// Initialize Sentry early
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || "",
+  integrations: [
+    nodeProfilingIntegration(),
+  ],
+  tracesSampleRate: 1.0,
+});
+
+Sentry.setupExpressErrorHandler(app);
+
+// Security Headers
+app.use(helmet());
+
+// Logging
+if (process.env.NODE_ENV !== "production") {
+  app.use(morgan("dev"));
+}
+
+// Cookie Parser
+app.use(cookieParser());
+
+// Allowed origins list (Strict CORS)
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://creator-flow-livid.vercel.app",
 ];
 
-// ✅ FIXED: Removed app.options('*', cors()) — it crashes on Node.js v22
-// app.use(cors()) already handles OPTIONS preflight requests automatically
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, Postman, curl etc.)
       if (!origin) return callback(null, true);
-
-      // Allow exact origin matches
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
-      // Allow ALL *.vercel.app preview deployment URLs
-      if (origin.endsWith(".vercel.app")) {
-        return callback(null, true);
-      }
-
       console.warn(`🚫 CORS blocked origin: ${origin}`);
       return callback(new Error(`CORS policy does not allow origin: ${origin}`), false);
     },
@@ -68,50 +92,72 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// --- RATE LIMITING ---
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { success: false, message: "Too many requests from this IP, please try again after 15 minutes" }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per 15 min
+  message: { success: false, message: "Too many auth attempts from this IP, please try again later" }
+});
+
+// Note: AI routes get strict limits in the router directly (per userId), but we apply general limits here
+app.use("/api/", generalLimiter);
+app.use("/api/v1/auth", authLimiter);
+
 // ---------------------
 // HEALTH CHECK ROUTES
 // ---------------------
-app.get("/", (req, res) => {
-  res.json({ success: true, message: "CreatorFlow API is running!" });
+app.get("/api/v1/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Backward compatibility (optional)
 app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "API healthy", timestamp: new Date().toISOString() });
-});
-
-app.get("/api/auth/test", (req, res) => {
-  res.json({ success: true, message: "Auth test route working!" });
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // ---------------------
-// API ROUTES
+// API ROUTES (VERSIONED)
 // ---------------------
-app.use("/api/auth", authRoutes);
-app.use("/api/clients", clientRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/media", mediaRoutes);
-app.use("/api/ai", aiRoutes);
-app.use("/api/history", historyRoutes);
-app.use("/api/analytics", analyticsRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/clients", clientRoutes);
+app.use("/api/v1/projects", projectRoutes);
+app.use("/api/v1/media", mediaRoutes);
+app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/history", historyRoutes);
+app.use("/api/v1/analytics", analyticsRoutes);
+app.use("/api/v1/profile", profileRoutes);
+app.use("/api/v1/trends", trendRoutes);
+app.use("/api/v1/multiplier", multiplierRoutes);
+app.use("/api/v1/virality", viralityRoutes);
+app.use("/api/v1/competitors", competitorRoutes);
+app.use("/api/v1/creator-analytics", creatorAnalyticsRoutes);
+app.use("/api/v1/agents", agentRoutes);
 
 // ---- OPTIONAL (delete if unused) ----
-app.use("/api/tasks", projectRoutes);
-app.use("/api/payments", projectRoutes);
+app.use("/api/v1/tasks", projectRoutes);
+app.use("/api/v1/payments", projectRoutes);
 
 // ---------------------
 // GLOBAL ERROR HANDLER
 // ---------------------
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
+  console.error("🔥 Global Error Caught:", err);
 
   // Handle CORS errors cleanly
   if (err.message && err.message.startsWith('CORS policy')) {
     return res.status(403).json({ success: false, message: err.message });
   }
 
+  // Always return clean JSON for API errors
   res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Server error",
+    error: err.message || "Internal Server Error",
+    status: err.status || 500,
   });
 });
 

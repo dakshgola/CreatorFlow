@@ -4,6 +4,7 @@ import AIGeneration from "../models/AIGeneration.js";
 import Task from "../models/Task.js";
 import Payment from "../models/Payment.js";
 import Project from "../models/Project.js";
+import { buildSystemPrompt } from "../services/aiMemoryService.js";
 
 // ❗ Do NOT re-import dotenv here (already loaded in server.js)
 
@@ -50,7 +51,10 @@ export const generateIdeas = async (req, res) => {
     }
 
     const model = getModel();
+    const systemPrompt = await buildSystemPrompt(req.user.id);
     const result = await model.generateContent(`
+${systemPrompt}
+
 Generate ${count} viral short-form content ideas.
 Niche: ${niche}
 Context: ${prompt}
@@ -90,7 +94,10 @@ export const generateHooks = async (req, res) => {
     }
     
     const model = getModel();
+    const systemPrompt = await buildSystemPrompt(req.user.id);
     const result = await model.generateContent(`
+${systemPrompt}
+
 Create ${count} viral hooks for: ${topic}
 Return numbered list only.
 `);
@@ -287,7 +294,9 @@ export const generateContent = async (req, res) => {
     }
 
     const model = getModel();
-    const prompt = `You are an expert AI content creator.
+    const systemPrompt = await buildSystemPrompt(req.user.id);
+    const prompt = `${systemPrompt}
+
 Topic: ${topic}
 Niche: ${niche}
 Platform: ${platform}

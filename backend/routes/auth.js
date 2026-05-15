@@ -1,6 +1,8 @@
 import express from "express";
-import { register, login, getMe } from "../controllers/authController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { register, login, getMe, refresh, logout } from "../controllers/authController.js";
+import { protect } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { registerSchema, loginSchema } from "../validators/authValidator.js";
 import User from "../models/User.js";
 
 const router = express.Router();
@@ -22,14 +24,28 @@ router.get("/test", (req, res) => {
  * @desc    Register a new user
  * @access  Public
  */
-router.post("/register", register);
+router.post("/register", validate(registerSchema), register);
 
 /**
  * @route   POST /api/auth/login
  * @desc    Login user and get token
  * @access  Public
  */
-router.post("/login", login);
+router.post("/login", validate(loginSchema), login);
+
+/**
+ * @route   POST /api/auth/refresh
+ * @desc    Refresh JWT token
+ * @access  Public
+ */
+router.post("/refresh", refresh);
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user and clear cookies
+ * @access  Public
+ */
+router.post("/logout", logout);
 
 /**
  * @route   GET /api/auth/me

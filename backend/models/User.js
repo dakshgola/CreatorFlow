@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
       enum: ["light", "dark", "system"],
       default: "system",
     },
+    refreshToken: { type: String, select: false },
   },
   { timestamps: true }
 );

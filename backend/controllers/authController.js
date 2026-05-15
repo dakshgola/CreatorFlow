@@ -1,17 +1,31 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
-/**
- * Generate JWT token
- */
-const generateToken = (userId) => {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET missing in .env file");
+const generateTokens = (userId) => {
+  if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+    throw new Error("JWT_SECRET or JWT_REFRESH_SECRET missing in .env file");
   }
 
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: "30d",
+  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: "15m", // Short lived access token
   });
+
+  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: "7d", // Longer lived refresh token
+  });
+
+  return { accessToken, refreshToken };
+};
+
+const setCookies = (res, accessToken, refreshToken) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  };
+
+  res.cookie("jwt", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15m
+  res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7d
 };
 
 /**
@@ -40,12 +54,17 @@ export const register = async (req, res) => {
     const user = new User({ name, email, password });
     await user.save();
 
-    const token = generateToken(user._id);
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    // Save refresh token to user
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    setCookies(res, accessToken, refreshToken);
 
     return res.status(201).json({
       success: true,
       message: "Registration successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -95,12 +114,16 @@ export const login = async (req, res) => {
         message: "Invalid email or password",
       });
 
-    const token = generateToken(user._id);
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    setCookies(res, accessToken, refreshToken);
 
     return res.json({
       success: true,
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
@@ -150,5 +173,61 @@ export const getMe = async (req, res) => {
       success: false,
       message: "Server error fetching user",
     });
+  }
+};
+
+/**
+ * REFRESH TOKEN
+ * POST /api/auth/refresh
+ */
+export const refresh = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies.refreshToken;
+    
+    if (!incomingRefreshToken) {
+      return res.status(401).json({ success: false, message: "No refresh token provided" });
+    }
+
+    const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_SECRET);
+    
+    const user = await User.findById(decoded.id).select("+refreshToken");
+    if (!user || user.refreshToken !== incomingRefreshToken) {
+      return res.status(401).json({ success: false, message: "Invalid refresh token" });
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user._id);
+    
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    setCookies(res, accessToken, refreshToken);
+
+    res.json({ success: true, message: "Token refreshed" });
+  } catch (error) {
+    console.error("REFRESH ERROR:", error);
+    res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
+  }
+};
+
+/**
+ * LOGOUT USER
+ * POST /api/auth/logout
+ */
+export const logout = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies.refreshToken;
+    if (incomingRefreshToken) {
+      const decoded = jwt.decode(incomingRefreshToken);
+      if (decoded && decoded.id) {
+        await User.findByIdAndUpdate(decoded.id, { $unset: { refreshToken: 1 } });
+      }
+    }
+
+    res.clearCookie("jwt");
+    res.clearCookie("refreshToken");
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    console.error("LOGOUT ERROR:", error);
+    res.status(500).json({ success: false, message: "Server error during logout" });
   }
 };

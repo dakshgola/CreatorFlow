@@ -19,6 +19,9 @@ const aiGenerationSchema = new mongoose.Schema({
   },
 });
 
+aiGenerationSchema.index({ userId: 1 });
+aiGenerationSchema.index({ createdAt: -1 });
+
 const AIGeneration = mongoose.model('AIGeneration', aiGenerationSchema);
 
 export default AIGeneration;

@@ -3,7 +3,7 @@ import Client from '../models/Client.js';
 import Project from '../models/Project.js';
 import Task from '../models/Task.js';
 import Payment from '../models/Payment.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
