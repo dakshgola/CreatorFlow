@@ -24,6 +24,7 @@ import viralityRoutes from "./routes/virality.js";
 import competitorRoutes from "./routes/competitor.js";
 import creatorAnalyticsRoutes from "./routes/creatorAnalytics.js";
 import agentRoutes from "./routes/agent.js";
+import plannerRoutes from "./routes/planner.js";
 
 // Load environment variables FIRST (dotenv-flow supports .env, .env.development, etc.)
 dotenv.config();
@@ -59,19 +60,15 @@ Sentry.setupExpressErrorHandler(app);
 app.use(helmet());
 
 // Logging
-if (process.env.NODE_ENV !== "production") {
-  app.use(morgan("dev"));
-}
+app.use(morgan("dev"));
 
 // Cookie Parser
 app.use(cookieParser());
 
 // Allowed origins list (Strict CORS)
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://creator-flow-livid.vercel.app",
-];
+const allowedOrigins = process.env.NODE_ENV === "production" 
+  ? [process.env.CLIENT_URL || "https://creator-flow-livid.vercel.app"]
+  : ["http://localhost:5173", "http://localhost:3000"];
 
 app.use(
   cors({
@@ -113,7 +110,11 @@ app.use("/api/v1/auth", authLimiter);
 // HEALTH CHECK ROUTES
 // ---------------------
 app.get("/api/v1/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Backward compatibility (optional)
@@ -138,6 +139,7 @@ app.use("/api/v1/virality", viralityRoutes);
 app.use("/api/v1/competitors", competitorRoutes);
 app.use("/api/v1/creator-analytics", creatorAnalyticsRoutes);
 app.use("/api/v1/agents", agentRoutes);
+app.use("/api/v1/planner", plannerRoutes);
 
 // ---- OPTIONAL (delete if unused) ----
 app.use("/api/v1/tasks", projectRoutes);

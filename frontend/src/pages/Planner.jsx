@@ -1,292 +1,405 @@
-import React, { useMemo, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Trash2, ArrowRight, Sparkles, Plus } from "lucide-react";
 import PageShell from "../components/PageShell";
 
 const STATUSES = ["Idea", "Script", "Shoot", "Edit", "Posted"];
+const PLATFORMS = ["Instagram", "YouTube", "LinkedIn", "Twitter", "TikTok"];
+
+// In production, ensure Vite config proxies /api properly, or use full URL in development.
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1/planner";
 
 const Planner = () => {
-  // Demo Projects (replace later with DB)
-  const [projects, setProjects] = useState([
-    {
-      id: "p1",
-      title: "Blinkit Emotional Story Ad",
-      status: "Idea",
-      script: "Hook: Family time > chores. Blinkit saves time.\nValue: Quick delivery.\nCTA: Try it now.",
-      captions: ["Small moments matter ❤️", "Family > everything 🏠"],
-    },
-    {
-      id: "p2",
-      title: "Cinematic Gym Motivation Reel",
-      status: "Script",
-      script: "Hook: You don’t need motivation.\nValue: You need a system.\nCTA: Save this.",
-      captions: ["Discipline > motivation 💪"],
-    },
-    {
-      id: "p3",
-      title: "Photography BTS Reel",
-      status: "Edit",
-      script: "Show setup → lighting → shot → final grade.",
-      captions: ["Behind the shot 📸"],
-    },
-  ]);
+  const navigate = useNavigate();
+  const [cards, setCards] = useState({
+    Idea: [],
+    Script: [],
+    Shoot: [],
+    Edit: [],
+    Posted: [],
+  });
+  const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState("");
-
-  // Modal state
-  const [open, setOpen] = useState(false);
-  const [newProject, setNewProject] = useState({
+  // State for the inline "Add Card" forms. Object keyed by column status.
+  const [addingInColumn, setAddingInColumn] = useState(null);
+  const [newCard, setNewCard] = useState({
     title: "",
-    status: "Idea",
-    script: "",
-    caption: "",
+    platform: "Instagram",
+    dueDate: "",
   });
 
-  const filtered = useMemo(() => {
-    return projects.filter((p) =>
-      p.title.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [projects, search]);
+  useEffect(() => {
+    fetchCards();
+  }, []);
 
-  const grouped = useMemo(() => {
-    const obj = {};
-    for (const s of STATUSES) obj[s] = [];
-    filtered.forEach((p) => obj[p.status]?.push(p));
-    return obj;
-  }, [filtered]);
-
-  const moveProject = (id, nextStatus) => {
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p))
-    );
+  const fetchCards = async () => {
+    try {
+      const res = await fetch(API_URL, { credentials: "include" });
+      const json = await res.json();
+      if (json.success) {
+        setCards(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch cards", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteProject = (id) => {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
+  // ==========================================
+  // HTML5 DRAG AND DROP HANDLERS
+  // ==========================================
+
+  /**
+   * 1. onDragStart
+   * Fired when the user starts dragging a card.
+   * We store the card's ID and its original column in the dataTransfer object.
+   */
+  const handleDragStart = (e, cardId, sourceColumn) => {
+    e.dataTransfer.setData("cardId", cardId);
+    e.dataTransfer.setData("sourceColumn", sourceColumn);
+
+    // Optional visual flair: make the dragged card slightly transparent
+    setTimeout(() => {
+      e.target.style.opacity = "0.5";
+    }, 0);
   };
 
-  const handleAddProject = (e) => {
+  /**
+   * 2. onDragEnd
+   * Clean up any visual flair when the drag ends (whether it was dropped or cancelled).
+   */
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = "1";
+  };
+
+  /**
+   * 3. onDragOver
+   * Must call preventDefault() to allow an element to receive a drop event.
+   */
+  const handleDragOver = (e) => {
     e.preventDefault();
-    if (!newProject.title.trim()) return;
+  };
 
-    const payload = {
-      id: Date.now().toString(),
-      title: newProject.title.trim(),
-      status: newProject.status,
-      script: newProject.script.trim(),
-      captions: newProject.caption.trim() ? [newProject.caption.trim()] : [],
+  /**
+   * 4. onDrop
+   * Fired when a card is dropped over a column.
+   * Reads data from dataTransfer, executes optimistic UI update, then patches the API.
+   */
+  const handleDrop = async (e, targetColumn) => {
+    e.preventDefault();
+    const cardId = e.dataTransfer.getData("cardId");
+    const sourceColumn = e.dataTransfer.getData("sourceColumn");
+
+    // Don't do anything if we drop in the same column or there's no valid ID
+    if (!cardId || sourceColumn === targetColumn) return;
+
+    // Find the actual card object in our state
+    const cardToMove = cards[sourceColumn].find((c) => c._id === cardId);
+    if (!cardToMove) return;
+
+    // --- OPTIMISTIC UI UPDATE ---
+    setCards((prev) => ({
+      ...prev,
+      [sourceColumn]: prev[sourceColumn].filter((c) => c._id !== cardId),
+      [targetColumn]: [{ ...cardToMove, status: targetColumn }, ...prev[targetColumn]],
+    }));
+
+    // --- API CALL (PATCH status) ---
+    try {
+      const res = await fetch(`${API_URL}/${cardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: targetColumn }),
+      });
+      
+      if (!res.ok) throw new Error("API failed");
+    } catch (err) {
+      console.error("Failed to update card status", err);
+      // Revert optimistic update on failure by re-fetching
+      fetchCards();
+    }
+  };
+
+  // ==========================================
+  // INLINE CARD CREATION (POST)
+  // ==========================================
+  const handleCreateCard = async (status) => {
+    if (!newCard.title.trim()) return;
+
+    // Temporary ID for optimistic rendering
+    const tempId = `temp-${Date.now()}`;
+    const placeholderCard = {
+      _id: tempId,
+      ...newCard,
+      status,
+      aiGenerated: false,
     };
 
-    setProjects((p) => [payload, ...p]);
-    setOpen(false);
+    // --- OPTIMISTIC UI UPDATE ---
+    setCards((prev) => ({
+      ...prev,
+      [status]: [...prev[status], placeholderCard],
+    }));
 
-    setNewProject({
-      title: "",
-      status: "Idea",
-      script: "",
-      caption: "",
-    });
+    // Reset form state
+    setAddingInColumn(null);
+    setNewCard({ title: "", platform: "Instagram", dueDate: "" });
+
+    // --- API CALL (POST) ---
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...newCard, status }),
+      });
+      const json = await res.json();
+
+      if (json.success) {
+        // Swap the temporary card with the real database card (with real _id)
+        setCards((prev) => ({
+          ...prev,
+          [status]: prev[status].map((c) => (c._id === tempId ? json.data : c)),
+        }));
+      } else {
+        throw new Error("Create failed");
+      }
+    } catch (err) {
+      console.error("Failed to create card", err);
+      // Revert if API fails
+      setCards((prev) => ({
+        ...prev,
+        [status]: prev[status].filter((c) => c._id !== tempId),
+      }));
+    }
   };
 
+  // ==========================================
+  // OTHER ACTIONS (QUICK MOVE & DELETE)
+  // ==========================================
+  const handleQuickMove = async (card, sourceColumn) => {
+    const currentIndex = STATUSES.indexOf(sourceColumn);
+    if (currentIndex >= STATUSES.length - 1) return;
+
+    const targetColumn = STATUSES[currentIndex + 1];
+
+    // Optimistic Update
+    setCards((prev) => ({
+      ...prev,
+      [sourceColumn]: prev[sourceColumn].filter((c) => c._id !== card._id),
+      [targetColumn]: [{ ...card, status: targetColumn }, ...prev[targetColumn]],
+    }));
+
+    try {
+      await fetch(`${API_URL}/${card._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: targetColumn }),
+      });
+    } catch (err) {
+      fetchCards();
+    }
+  };
+
+  const handleDelete = async (cardId, sourceColumn) => {
+    if (!window.confirm("Are you sure you want to delete this card?")) return;
+
+    const cardToDelete = cards[sourceColumn].find((c) => c._id === cardId);
+
+    // Optimistic Delete
+    setCards((prev) => ({
+      ...prev,
+      [sourceColumn]: prev[sourceColumn].filter((c) => c._id !== cardId),
+    }));
+
+    try {
+      await fetch(`${API_URL}/${cardId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Failed to delete", err);
+      // Revert on failure
+      setCards((prev) => ({
+        ...prev,
+        [sourceColumn]: [...prev[sourceColumn], cardToDelete],
+      }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-gray-500 font-semibold animate-pulse">
+          Loading Planner Board...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <PageShell
         title="Content Planner"
-        subtitle="Manage your creator content pipeline like a premium SaaS workflow board."
-        right={
-          <>
-            <button className="btn-secondary" onClick={() => setProjects([])}>
-              Clear Demo
-            </button>
-            <button className="btn-primary" onClick={() => setOpen(true)}>
-              ➕ Add Project
-            </button>
-          </>
-        }
+        subtitle="Manage your pipeline with drag-and-drop ease."
       />
 
-      {/* Search Bar */}
-      <div className="card p-5 mb-6">
-        <label className="text-sm text-gray-600">Search Projects</label>
-        <input
-          className="input mt-2"
-          placeholder="Search your content ideas, scripts..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Pipeline Board */}
-      {filtered.length === 0 ? (
-        <div className="card p-10 text-center">
-          <p className="text-gray-900 font-bold text-lg">No projects found</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Add projects or search something else.
-          </p>
-          <button className="btn-primary mt-6" onClick={() => setOpen(true)}>
-            ➕ Add your first project
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+      <div className="flex-1 p-6 overflow-x-auto">
+        <div className="flex gap-6 min-w-max h-full pb-8">
           {STATUSES.map((col) => (
-            <div key={col} className="card p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-gray-900 font-bold">{col}</p>
-                <span className="badge badge-indigo">{grouped[col].length}</span>
+            <div
+              key={col}
+              className="w-80 flex flex-col bg-gray-100/50 rounded-xl border border-gray-200 overflow-hidden"
+              // DND Receivers
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col)}
+            >
+              {/* COLUMN HEADER */}
+              <div className="p-4 border-b border-gray-200 bg-gray-100 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-gray-800">{col}</h3>
+                  <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full font-semibold">
+                    {cards[col]?.length || 0}
+                  </span>
+                </div>
+
+                {/* "Generate from AI" button ONLY in Idea column */}
+                {col === "Idea" && (
+                  <button
+                    onClick={() => navigate("/ai-tools")}
+                    className="text-xs flex items-center gap-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-2 py-1 rounded-md font-medium transition-colors"
+                  >
+                    <Sparkles size={12} /> AI Ideas
+                  </button>
+                )}
               </div>
 
-              <div className="divider my-4" />
-
-              <div className="space-y-3">
-                {grouped[col].map((p) => (
+              {/* SCROLLABLE CARD LIST */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                {cards[col]?.map((card) => (
                   <div
-                    key={p.id}
-                    className="rounded-2xl bg-white border border-gray-100 p-4 hover:bg-gray-50 transition"
+                    key={card._id}
+                    // DND Draggable properties
+                    draggable="true"
+                    onDragStart={(e) => handleDragStart(e, card._id, col)}
+                    onDragEnd={handleDragEnd}
+                    className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group relative"
                   >
-                    <p className="text-gray-900 font-semibold">{p.title}</p>
-
-                    {p.script && (
-                      <p className="text-xs text-gray-500 mt-2 line-clamp-3">
-                        {p.script}
-                      </p>
-                    )}
-
-                    {p.captions?.length > 0 && (
-                      <p className="text-xs text-indigo-300 mt-2">
-                        Caption: {p.captions[0]}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {/* Move Back */}
-                      {STATUSES.indexOf(col) > 0 && (
-                        <button
-                          className="btn-secondary"
-                          onClick={() =>
-                            moveProject(
-                              p.id,
-                              STATUSES[STATUSES.indexOf(col) - 1]
-                            )
-                          }
-                        >
-                          ← Back
-                        </button>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600">
+                        {card.platform}
+                      </span>
+                      {card.aiGenerated && (
+                        <Sparkles size={14} className="text-purple-500" />
                       )}
+                    </div>
 
-                      {/* Move Forward */}
-                      {STATUSES.indexOf(col) < STATUSES.length - 1 && (
+                    <h4 className="font-semibold text-gray-900 mb-3 leading-snug">
+                      {card.title}
+                    </h4>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                      <span>
+                        {card.dueDate
+                          ? new Date(card.dueDate).toLocaleDateString()
+                          : "No due date"}
+                      </span>
+
+                      {/* Hover Actions */}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          className="btn-primary"
-                          onClick={() =>
-                            moveProject(
-                              p.id,
-                              STATUSES[STATUSES.indexOf(col) + 1]
-                            )
-                          }
+                          onClick={() => handleDelete(card._id, col)}
+                          className="text-red-400 hover:text-red-600 p-1"
+                          title="Delete card"
                         >
-                          Next →
+                          <Trash2 size={14} />
                         </button>
-                      )}
 
-                      <button
-                        className="btn-danger"
-                        onClick={() => deleteProject(p.id)}
-                      >
-                        🗑
-                      </button>
+                        {STATUSES.indexOf(col) < STATUSES.length - 1 && (
+                          <button
+                            onClick={() => handleQuickMove(card, col)}
+                            className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-1 rounded"
+                            title="Move to next column"
+                          >
+                            <ArrowRight size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
+
+                {/* INLINE ADD CARD FORM */}
+                {addingInColumn === col ? (
+                  <div className="bg-white p-3 rounded-lg shadow-sm border border-indigo-200 animate-in fade-in duration-200">
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Card Title..."
+                      className="w-full text-sm border border-gray-300 rounded p-1.5 mb-2 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      value={newCard.title}
+                      onChange={(e) =>
+                        setNewCard({ ...newCard, title: e.target.value })
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCreateCard(col);
+                        if (e.key === "Escape") setAddingInColumn(null);
+                      }}
+                    />
+                    <div className="flex gap-2 mb-2">
+                      <select
+                        className="text-xs border border-gray-300 rounded p-1 flex-1 focus:outline-none"
+                        value={newCard.platform}
+                        onChange={(e) =>
+                          setNewCard({ ...newCard, platform: e.target.value })
+                        }
+                      >
+                        {PLATFORMS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="date"
+                        className="text-xs border border-gray-300 rounded p-1 flex-1 focus:outline-none"
+                        value={newCard.dueDate}
+                        onChange={(e) =>
+                          setNewCard({ ...newCard, dueDate: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="flex justify-end gap-1 mt-3">
+                      <button
+                        onClick={() => setAddingInColumn(null)}
+                        className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded font-medium transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleCreateCard(col)}
+                        className="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium transition shadow-sm"
+                      >
+                        Add Card
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAddingInColumn(col)}
+                    className="w-full py-2 flex items-center justify-center gap-1 text-sm text-gray-500 hover:bg-gray-200 hover:text-gray-800 rounded-lg transition-colors border border-dashed border-gray-300"
+                  >
+                    <Plus size={16} /> Add Card
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {/* Modal */}
-      {open && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setOpen(false)}
-          />
-
-          <div className="relative w-full max-w-xl card p-6 animate-pop-in">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Add Project</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Add a new content idea into your pipeline.
-                </p>
-              </div>
-
-              <button className="btn-ghost" onClick={() => setOpen(false)}>
-                ✖
-              </button>
-            </div>
-
-            <div className="divider my-6" />
-
-            <form onSubmit={handleAddProject} className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-600">Title</label>
-                <input
-                  className="input mt-2"
-                  placeholder="Example: Viral gym reel for Instagram"
-                  value={newProject.title}
-                  onChange={(e) =>
-                    setNewProject((p) => ({ ...p, title: e.target.value }))
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-600">Status</label>
-                  <select
-                    className="input mt-2"
-                    value={newProject.status}
-                    onChange={(e) =>
-                      setNewProject((p) => ({ ...p, status: e.target.value }))
-                    }
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm text-gray-600">1 Caption</label>
-                  <input
-                    className="input mt-2"
-                    placeholder="Example: Discipline wins 💪"
-                    value={newProject.caption}
-                    onChange={(e) =>
-                      setNewProject((p) => ({ ...p, caption: e.target.value }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Script / Notes</label>
-                <textarea
-                  className="textarea mt-2"
-                  placeholder="Write script or notes..."
-                  value={newProject.script}
-                  onChange={(e) =>
-                    setNewProject((p) => ({ ...p, script: e.target.value }))
-                  }
-                />
-              </div>
-
-              <button className="btn-primary w-full py-3">
-                ✅ Add Project
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

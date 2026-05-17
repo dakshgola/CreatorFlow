@@ -3,49 +3,34 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 // ✅ FIXED: Base API URL — VITE_API_URL should be set to full base like:
-//    Local:      http://localhost:5000/api  (in .env)
-//    Production: https://creatorflow-i5ev.onrender.com/api  (in Vercel env vars)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+//    Local:      http://localhost:5000/api/v1
+//    Production: https://creatorflow-i5ev.onrender.com/api/v1
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  // // Explain: Removed 'token' state since the JWT is securely hidden in an httpOnly cookie.
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        verifyToken(storedToken);
-      } catch {
-        clearAuth();
-        setLoading(false);
-      }
-    } else {
-      setLoading(false);
-    }
+    // // Explain: On app load, we verify auth by directly hitting /me. The browser will auto-send the cookie if it exists.
+    verifyUser();
   }, []);
 
-  const verifyToken = async (authToken) => {
+  const verifyUser = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
+        // // Explain: 'credentials: include' forces fetch to automatically send the httpOnly cookies.
+        credentials: 'include', 
       });
 
-      if (!response.ok) throw new Error('Invalid token');
+      if (!response.ok) throw new Error('Not authenticated');
 
       const data = await response.json();
       if (data.success) {
         setUser(data.user);
-        setToken(authToken);
       } else {
         clearAuth();
       }
@@ -58,9 +43,7 @@ export const AuthProvider = ({ children }) => {
 
   const clearAuth = () => {
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // // Explain: Removed localStorage.removeItem('token') & ('user') since we no longer rely on them.
   };
 
   const register = async (userData) => {
@@ -68,6 +51,8 @@ export const AuthProvider = ({ children }) => {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // // Explain: Necessary so the backend's Set-Cookie header is accepted by the browser.
+        credentials: 'include',
         body: JSON.stringify(userData),
       });
 
@@ -77,10 +62,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message || 'Registration failed' };
       }
 
-      setToken(data.token);
+      // // Explain: We simply set the user state. The backend securely handled storing the JWT in the cookie.
       setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
 
       return { success: true, data };
     } catch (error) {
@@ -93,6 +76,8 @@ export const AuthProvider = ({ children }) => {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // // Explain: Allows the browser to receive and store the httpOnly cookie from the backend response.
+        credentials: 'include',
         body: JSON.stringify(credentials),
       });
 
@@ -102,10 +87,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: data.message || 'Login failed' };
       }
 
-      setToken(data.token);
+      // // Explain: We only need to store the user profile in React state. No more localStorage!
       setUser(data.user);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
 
       return { success: true, data };
     } catch (error) {
@@ -113,24 +96,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    clearAuth();
+  const logout = async () => {
+    try {
+      // // Explain: Explicitly hit the backend to clear the httpOnly cookies (using DELETE as requested).
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'DELETE', 
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout API failed', error);
+    } finally {
+      // // Explain: Clear React state regardless of API success to immediately lock the UI.
+      clearAuth();
+    }
   };
 
   // ✅ fetchWithAuth helper — used by other components needing authenticated requests
   const fetchWithAuth = async (url, options = {}) => {
-    const authToken = token || localStorage.getItem('token');
-
-    // If url is already absolute, use it. Otherwise prepend API_BASE_URL
     const fullUrl = url.startsWith('http')
       ? url
       : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
     return fetch(fullUrl, {
       ...options,
+      // // Explain: 'credentials: include' replaces the manual Authorization Bearer header. The browser handles the rest.
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(authToken && { Authorization: `Bearer ${authToken}` }),
         ...options.headers,
       },
     });
@@ -140,9 +132,9 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
         loading,
-        isAuthenticated: !!user && !!token,
+        // // Explain: Authentication status is now determined purely by whether the user object exists in state.
+        isAuthenticated: !!user,
         register,
         login,
         logout,

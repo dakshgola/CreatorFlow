@@ -3,6 +3,7 @@ import Client from '../models/Client.js';
 import Project from '../models/Project.js';
 import Task from '../models/Task.js';
 import Payment from '../models/Payment.js';
+import { getAnalyticsSummary } from '../controllers/analyticsController.js';
 import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -10,6 +11,13 @@ const router = express.Router();
 /**
  * @route   GET /api/analytics
  * @desc    Get analytics stats (clients count, tasks due this month, payments pending)
+ * @access  Private
+ */
+router.get('/summary', protect, getAnalyticsSummary);
+
+/**
+ * @route   GET /api/analytics
+ * @desc    Get legacy analytics stats (clients count, tasks due this month, payments pending)
  * @access  Private
  */
 router.get('/', protect, async (req, res) => {

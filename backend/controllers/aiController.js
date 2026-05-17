@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import AIGeneration from "../models/AIGeneration.js";
 import TitleTest from "../models/TitleTest.js";
 import ContentScore from "../models/ContentScore.js";
+import ContentHistory from "../models/ContentHistory.js";
 import { buildSystemPrompt } from "../services/aiMemoryService.js";
 
 const getModel = () => {
@@ -41,7 +42,18 @@ export const generateContentV2 = async (req, res) => {
       output: outputText
     });
 
-    res.json({ success: true, data: newGen });
+    let historyType = "idea"; // default fallback
+    if (type === "caption") historyType = "caption";
+    else if (type === "ideas") historyType = "idea";
+
+    const historyItem = await ContentHistory.create({
+      userId: req.user.id,
+      type: historyType,
+      input: { topic, type, platform },
+      output: { text: outputText },
+    });
+
+    res.json({ success: true, data: newGen, historyId: historyItem._id });
   } catch (error) {
     console.error("GENERATE CONTENT ERROR:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -183,7 +195,14 @@ Return strict JSON:
       fixSuggestion: scores.fixSuggestion
     });
 
-    res.json({ success: true, data: savedScore });
+    const historyItem = await ContentHistory.create({
+      userId: req.user.id,
+      type: "score",
+      input: { content, type, platform },
+      output: scores,
+    });
+
+    res.json({ success: true, data: savedScore, historyId: historyItem._id });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
