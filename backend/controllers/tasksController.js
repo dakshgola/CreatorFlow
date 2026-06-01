@@ -1,10 +1,11 @@
 import Task from '../models/Task.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Get all tasks for the authenticated user
  * GET /api/v1/tasks
  */
-export const listTasks = async (req, res) => {
+export const listTasks = async (req, res, next) => {
   try {
     const tasks = await Task.find({ userId: req.user.id })
       .populate('projectId', 'title')
@@ -16,11 +17,7 @@ export const listTasks = async (req, res) => {
       data: tasks,
     });
   } catch (error) {
-    console.error('List tasks error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching tasks',
-    });
+    next(error);
   }
 };
 
@@ -28,15 +25,12 @@ export const listTasks = async (req, res) => {
  * Create a new task
  * POST /api/v1/tasks
  */
-export const createTask = async (req, res) => {
+export const createTask = async (req, res, next) => {
   try {
     const { title, description, dueDate, priority, completed, projectId } = req.body;
 
     if (!title || !dueDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide title and dueDate',
-      });
+      return next(new AppError('Please provide title and dueDate', 400));
     }
 
     const task = await Task.create({
@@ -55,18 +49,11 @@ export const createTask = async (req, res) => {
       data: task,
     });
   } catch (error) {
-    console.error('Create task error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while creating task',
-    });
+    next(error);
   }
 };
 
@@ -74,7 +61,7 @@ export const createTask = async (req, res) => {
  * Update a task
  * PUT /api/v1/tasks/:id
  */
-export const updateTask = async (req, res) => {
+export const updateTask = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description, dueDate, priority, completed, projectId } = req.body;
@@ -82,10 +69,7 @@ export const updateTask = async (req, res) => {
     let task = await Task.findOne({ _id: id, userId: req.user.id });
 
     if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: 'Task not found',
-      });
+      return next(new AppError('Task not found', 404));
     }
 
     if (title !== undefined) task.title = title.trim();
@@ -103,24 +87,14 @@ export const updateTask = async (req, res) => {
       data: task,
     });
   } catch (error) {
-    console.error('Update task error:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid task ID format',
-      });
+      return next(new AppError('Invalid task ID format', 400));
     }
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating task',
-    });
+    next(error);
   }
 };
 
@@ -128,17 +102,14 @@ export const updateTask = async (req, res) => {
  * Delete a task
  * DELETE /api/v1/tasks/:id
  */
-export const deleteTask = async (req, res) => {
+export const deleteTask = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const task = await Task.findOneAndDelete({ _id: id, userId: req.user.id });
 
     if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: 'Task not found',
-      });
+      return next(new AppError('Task not found', 404));
     }
 
     res.json({
@@ -147,16 +118,9 @@ export const deleteTask = async (req, res) => {
       data: {},
     });
   } catch (error) {
-    console.error('Delete task error:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid task ID format',
-      });
+      return next(new AppError('Invalid task ID format', 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while deleting task',
-    });
+    next(error);
   }
 };

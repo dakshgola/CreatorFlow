@@ -1,11 +1,12 @@
 import PlannerCard from "../models/PlannerCard.js";
+import AppError from "../utils/AppError.js";
 
 /**
  * @desc    Get all planner cards for user, grouped by status
  * @route   GET /api/v1/planner
  * @access  Private
  */
-export const getPlannerCards = async (req, res) => {
+export const getPlannerCards = async (req, res, next) => {
   try {
     const cards = await PlannerCard.find({ userId: req.user.id }).sort({ createdAt: -1 });
 
@@ -32,8 +33,7 @@ export const getPlannerCards = async (req, res) => {
       data: groupedCards,
     });
   } catch (error) {
-    console.error("GET PLANNER CARDS ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error fetching planner cards" });
+    next(error);
   }
 };
 
@@ -42,12 +42,12 @@ export const getPlannerCards = async (req, res) => {
  * @route   POST /api/v1/planner
  * @access  Private
  */
-export const createPlannerCard = async (req, res) => {
+export const createPlannerCard = async (req, res, next) => {
   try {
     const { title, description, platform, status, dueDate, aiGenerated } = req.body;
 
     if (!title) {
-      return res.status(400).json({ success: false, message: "Title is required" });
+      return next(new AppError("Title is required", 400));
     }
 
     const card = await PlannerCard.create({
@@ -65,8 +65,7 @@ export const createPlannerCard = async (req, res) => {
       data: card,
     });
   } catch (error) {
-    console.error("CREATE PLANNER CARD ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error creating planner card" });
+    next(error);
   }
 };
 
@@ -75,17 +74,17 @@ export const createPlannerCard = async (req, res) => {
  * @route   PATCH /api/v1/planner/:id
  * @access  Private
  */
-export const updatePlannerCard = async (req, res) => {
+export const updatePlannerCard = async (req, res, next) => {
   try {
     let card = await PlannerCard.findById(req.params.id);
 
     if (!card) {
-      return res.status(404).json({ success: false, message: "Card not found" });
+      return next(new AppError("Card not found", 404));
     }
 
     // Ensure the user owns the card
     if (card.userId.toString() !== req.user.id) {
-      return res.status(401).json({ success: false, message: "Not authorized to update this card" });
+      return next(new AppError("Not authorized to update this card", 401));
     }
 
     card = await PlannerCard.findByIdAndUpdate(req.params.id, req.body, {
@@ -98,8 +97,7 @@ export const updatePlannerCard = async (req, res) => {
       data: card,
     });
   } catch (error) {
-    console.error("UPDATE PLANNER CARD ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error updating planner card" });
+    next(error);
   }
 };
 
@@ -108,17 +106,17 @@ export const updatePlannerCard = async (req, res) => {
  * @route   DELETE /api/v1/planner/:id
  * @access  Private
  */
-export const deletePlannerCard = async (req, res) => {
+export const deletePlannerCard = async (req, res, next) => {
   try {
     const card = await PlannerCard.findById(req.params.id);
 
     if (!card) {
-      return res.status(404).json({ success: false, message: "Card not found" });
+      return next(new AppError("Card not found", 404));
     }
 
     // Ensure the user owns the card
     if (card.userId.toString() !== req.user.id) {
-      return res.status(401).json({ success: false, message: "Not authorized to delete this card" });
+      return next(new AppError("Not authorized to delete this card", 401));
     }
 
     await card.deleteOne();
@@ -128,7 +126,6 @@ export const deletePlannerCard = async (req, res) => {
       data: {},
     });
   } catch (error) {
-    console.error("DELETE PLANNER CARD ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error deleting planner card" });
+    next(error);
   }
 };

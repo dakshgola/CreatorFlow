@@ -1,10 +1,11 @@
 import Client from '../models/Client.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Get all clients for the authenticated user
  * GET /api/clients
  */
-export const listClients = async (req, res) => {
+export const listClients = async (req, res, next) => {
   try {
     // Get clients belonging to the authenticated user
     const clients = await Client.find({ userId: req.user.id })
@@ -16,12 +17,7 @@ export const listClients = async (req, res) => {
       data: clients,
     });
   } catch (error) {
-    console.error('List clients error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching clients',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
@@ -29,7 +25,7 @@ export const listClients = async (req, res) => {
  * Get a single client by ID
  * GET /api/clients/:id
  */
-export const getClient = async (req, res) => {
+export const getClient = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -39,10 +35,7 @@ export const getClient = async (req, res) => {
     });
 
     if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found',
-      });
+      return next(new AppError('Client not found', 404));
     }
 
     res.json({
@@ -50,21 +43,11 @@ export const getClient = async (req, res) => {
       data: client,
     });
   } catch (error) {
-    console.error('Get client error:', error);
-    
     // Handle invalid ObjectId format
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid client ID format',
-      });
+      return next(new AppError('Invalid client ID format', 400));
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching client',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
@@ -72,34 +55,25 @@ export const getClient = async (req, res) => {
  * Create a new client
  * POST /api/clients
  */
-export const createClient = async (req, res) => {
+export const createClient = async (req, res, next) => {
   try {
     const { name, niche, links, paymentRate, notes } = req.body;
 
     // Validate required fields
     if (!name || !niche || paymentRate === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide name, niche, and paymentRate',
-      });
+      return next(new AppError('Please provide name, niche, and paymentRate', 400));
     }
 
     // Validate paymentRate is a number and positive
     if (typeof paymentRate !== 'number' || paymentRate < 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment rate must be a positive number',
-      });
+      return next(new AppError('Payment rate must be a positive number', 400));
     }
 
     // Validate links array if provided
     if (links && Array.isArray(links)) {
       for (const link of links) {
         if (link.url && !/^https?:\/\/.+/.test(link.url)) {
-          return res.status(400).json({
-            success: false,
-            message: 'All links must have valid URLs',
-          });
+          return next(new AppError('All links must have valid URLs', 400));
         }
       }
     }
@@ -120,22 +94,12 @@ export const createClient = async (req, res) => {
       data: client,
     });
   } catch (error) {
-    console.error('Create client error:', error);
-
     // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error while creating client',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
@@ -143,7 +107,7 @@ export const createClient = async (req, res) => {
  * Update a client
  * PUT /api/clients/:id
  */
-export const updateClient = async (req, res) => {
+export const updateClient = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, niche, links, paymentRate, notes } = req.body;
@@ -155,19 +119,13 @@ export const updateClient = async (req, res) => {
     });
 
     if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found',
-      });
+      return next(new AppError('Client not found', 404));
     }
 
     // Validate paymentRate if provided
     if (paymentRate !== undefined) {
       if (typeof paymentRate !== 'number' || paymentRate < 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Payment rate must be a positive number',
-        });
+        return next(new AppError('Payment rate must be a positive number', 400));
       }
     }
 
@@ -175,10 +133,7 @@ export const updateClient = async (req, res) => {
     if (links && Array.isArray(links)) {
       for (const link of links) {
         if (link.url && !/^https?:\/\/.+/.test(link.url)) {
-          return res.status(400).json({
-            success: false,
-            message: 'All links must have valid URLs',
-          });
+          return next(new AppError('All links must have valid URLs', 400));
         }
       }
     }
@@ -199,30 +154,17 @@ export const updateClient = async (req, res) => {
       data: client,
     });
   } catch (error) {
-    console.error('Update client error:', error);
-
     // Handle invalid ObjectId format
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid client ID format',
-      });
+      return next(new AppError('Invalid client ID format', 400));
     }
 
     // Handle validation errors
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating client',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    next(error);
   }
 };
 
@@ -230,7 +172,7 @@ export const updateClient = async (req, res) => {
  * Delete a client
  * DELETE /api/clients/:id
  */
-export const deleteClient = async (req, res) => {
+export const deleteClient = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -241,10 +183,7 @@ export const deleteClient = async (req, res) => {
     });
 
     if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found',
-      });
+      return next(new AppError('Client not found', 404));
     }
 
     res.json({
@@ -253,20 +192,10 @@ export const deleteClient = async (req, res) => {
       data: {},
     });
   } catch (error) {
-    console.error('Delete client error:', error);
-
     // Handle invalid ObjectId format
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid client ID format',
-      });
+      return next(new AppError('Invalid client ID format', 400));
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error while deleting client',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+    next(error);
   }
 };

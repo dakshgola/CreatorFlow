@@ -5,6 +5,7 @@ import ContentScore from "../models/ContentScore.js";
 import ContentHistory from "../models/ContentHistory.js";
 import PlannerCard from "../models/PlannerCard.js";
 import { buildSystemPrompt } from "../services/aiMemoryService.js";
+import AppError from "../utils/AppError.js";
 
 const getModel = () => {
   if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
@@ -15,12 +16,12 @@ const getModel = () => {
 // ===============================
 // 1. FULL GENERATOR (Generator Tab)
 // ===============================
-export const generateContentV2 = async (req, res) => {
+export const generateContentV2 = async (req, res, next) => {
   try {
     const { topic, niche, platform } = req.body;
 
     if (!topic || !platform) {
-      return res.status(400).json({ success: false, message: "Topic and platform are required" });
+      return next(new AppError("Topic and platform are required", 400));
     }
 
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -69,15 +70,14 @@ export const generateContentV2 = async (req, res) => {
 
     res.json({ success: true, data: newGen });
   } catch (error) {
-    console.error("GENERATE CONTENT ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getRecentGenerations = async (req, res) => {
+export const getRecentGenerations = async (req, res, next) => {
   try {
     const history = await AIGeneration.find({ userId: req.user.id })
       .sort({ createdAt: -1 })
@@ -97,19 +97,19 @@ export const getRecentGenerations = async (req, res) => {
 
     res.json({ success: true, data: mappedHistory });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching history" });
+    next(error);
   }
 };
 
 // ===============================
 // 2. CONTENT IDEAS (Ideas Tab)
 // ===============================
-export const generateContentIdeas = async (req, res) => {
+export const generateContentIdeas = async (req, res, next) => {
   try {
     const { prompt: userPrompt, niche, count } = req.body;
     
     if (!niche) {
-      return res.status(400).json({ success: false, message: "Niche is required" });
+      return next(new AppError("Niche is required", 400));
     }
 
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -145,23 +145,22 @@ export const generateContentIdeas = async (req, res) => {
 
     res.json({ success: true, data: newGen });
   } catch (error) {
-    console.error("GENERATE IDEAS ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 3. SOCIAL CAPTIONS (Captions Tab)
 // ===============================
-export const generateCaptions = async (req, res) => {
+export const generateCaptions = async (req, res, next) => {
   try {
     const { topic, tone, count } = req.body;
 
     if (!topic) {
-      return res.status(400).json({ success: false, message: "Topic is required" });
+      return next(new AppError("Topic is required", 400));
     }
 
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -197,23 +196,22 @@ export const generateCaptions = async (req, res) => {
 
     res.json({ success: true, data: newGen });
   } catch (error) {
-    console.error("GENERATE CAPTIONS ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 4. PERFORMANCE SCORE / STRATEGY
 // ===============================
-export const scoreContent = async (req, res) => {
+export const scoreContent = async (req, res, next) => {
   try {
     const { content, type, platform } = req.body;
 
     if (!content || !platform) {
-      return res.status(400).json({ success: false, message: "Content and platform are required" });
+      return next(new AppError("Content and platform are required", 400));
     }
 
     const finalPrompt = `Act as an elite content performance strategist. Rate this content type "${type || 'script'}" for the platform "${platform}" out of 10.
@@ -270,23 +268,22 @@ export const scoreContent = async (req, res) => {
 
     res.json({ success: true, data: newGen, scoreId: savedScore._id });
   } catch (error) {
-    console.error("SCORE CONTENT ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 5. SCRIPTS WRITER (Scripts Tab)
 // ===============================
-export const generateScripts = async (req, res) => {
+export const generateScripts = async (req, res, next) => {
   try {
     const { topic, length } = req.body;
 
     if (!topic) {
-      return res.status(400).json({ success: false, message: "Topic is required" });
+      return next(new AppError("Topic is required", 400));
     }
 
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -310,23 +307,22 @@ export const generateScripts = async (req, res) => {
 
     res.json({ success: true, data: newGen });
   } catch (error) {
-    console.error("GENERATE SCRIPT ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 6. VIRAL HOOKS (Hooks Tab)
 // ===============================
-export const generateHooks = async (req, res) => {
+export const generateHooks = async (req, res, next) => {
   try {
     const { topic, count } = req.body;
 
     if (!topic) {
-      return res.status(400).json({ success: false, message: "Topic is required" });
+      return next(new AppError("Topic is required", 400));
     }
 
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -354,23 +350,22 @@ export const generateHooks = async (req, res) => {
 
     res.json({ success: true, data: newGen });
   } catch (error) {
-    console.error("GENERATE HOOKS ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 7. MULTI-TURN AI CHAT
 // ===============================
-export const handleChat = async (req, res) => {
+export const handleChat = async (req, res, next) => {
   try {
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ success: false, message: "Message is required" });
+      return next(new AppError("Message is required", 400));
     }
 
     // 1. Fetch last 10 messages for this user (ascending order)
@@ -430,24 +425,23 @@ export const handleChat = async (req, res) => {
 
     res.json({ success: true, data: newChat });
   } catch (error) {
-    console.error("AI CHAT ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // 8. UPDATE BOOKMARK STATUS
 // ===============================
-export const updateBookmark = async (req, res) => {
+export const updateBookmark = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { bookmarked } = req.body;
     
     if (bookmarked === undefined) {
-      return res.status(400).json({ success: false, message: "bookmarked field is required" });
+      return next(new AppError("bookmarked field is required", 400));
     }
 
     const generation = await AIGeneration.findOneAndUpdate(
@@ -457,20 +451,19 @@ export const updateBookmark = async (req, res) => {
     );
 
     if (!generation) {
-      return res.status(404).json({ success: false, message: "Generation not found" });
+      return next(new AppError("Generation not found", 404));
     }
 
     res.json({ success: true, data: generation });
   } catch (error) {
-    console.error("UPDATE BOOKMARK ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error updating bookmark" });
+    next(error);
   }
 };
 
 // ===============================
 // 9. AI WEEKLY DIGEST (Dashboard Modal)
 // ===============================
-export const generateDigest = async (req, res) => {
+export const generateDigest = async (req, res, next) => {
   try {
     // 1. Fetch user's content history & planner cards
     const plannerCards = await PlannerCard.find({ userId: req.user.id }).limit(10);
@@ -499,18 +492,17 @@ export const generateDigest = async (req, res) => {
 
     res.json({ success: true, data: outputText });
   } catch (error) {
-    console.error("GENERATE DIGEST ERROR:", error);
     if (error.status || error.message?.includes("API") || error.message?.includes("fetch")) {
-      return res.status(503).json({ success: false, message: "AI service temporarily unavailable" });
+      return next(new AppError("AI service temporarily unavailable", 503));
     }
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // ===============================
 // LEGACY BACKWARD COMPATIBLE FLOWS
 // ===============================
-export const generateABTitles = async (req, res) => {
+export const generateABTitles = async (req, res, next) => {
   try {
     const { topic } = req.body;
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -536,15 +528,15 @@ export const generateABTitles = async (req, res) => {
 
     res.json({ success: true, data: session });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const chooseTitle = async (req, res) => {
+export const chooseTitle = async (req, res, next) => {
   try {
     const { sessionId } = req.params;
     const { title } = req.body;
-    if (!title) return res.status(400).json({ success: false, message: "title is required" });
+    if (!title) return next(new AppError("title is required", 400));
 
     const session = await TitleTest.findOneAndUpdate(
       { _id: sessionId, userId: req.user.id },
@@ -553,11 +545,11 @@ export const chooseTitle = async (req, res) => {
     );
     res.json({ success: true, data: session });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error choosing title" });
+    next(error);
   }
 };
 
-export const runContentPipeline = async (req, res) => {
+export const runContentPipeline = async (req, res, next) => {
   try {
     const { topic, script } = req.body;
     const systemPrompt = await buildSystemPrompt(req.user.id);
@@ -582,11 +574,11 @@ export const runContentPipeline = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const getTrendingHooks = async (req, res) => {
+export const getTrendingHooks = async (req, res, next) => {
   try {
     const niche = req.query.niche || "Entrepreneurship";
     let redditCache = { data: null, timestamp: 0 };
@@ -609,6 +601,6 @@ export const getTrendingHooks = async (req, res) => {
     const hooks = JSON.parse(result.response?.text());
     res.json({ success: true, data: hooks });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };

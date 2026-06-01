@@ -9,7 +9,7 @@ import Client from "../models/Client.js";
  * Get analytics summary using real MongoDB aggregation pipelines
  * GET /api/v1/analytics/summary
  */
-export const getAnalyticsSummary = async (req, res) => {
+export const getAnalyticsSummary = async (req, res, next) => {
   try {
     const userId = new mongoose.Types.ObjectId(req.user.id);
     const now = new Date();
@@ -162,7 +162,6 @@ export const getAnalyticsSummary = async (req, res) => {
 
     res.json(finalData);
   } catch (error) {
-    console.error("Analytics Summary Error:", error);
-    res.status(500).json({ success: false, message: "Server error computing analytics summary" });
+    next(error);
   }
 };

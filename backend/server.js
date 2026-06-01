@@ -111,17 +111,17 @@ app.use("/api/v1/auth/", authLimiter);
 // ---------------------
 // HEALTH CHECK ROUTES
 // ---------------------
+app.get("/health", (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 app.get("/api/v1/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
-  });
+  res.json({ status: 'ok', timestamp: Date.now() });
 });
 
 // Backward compatibility (optional)
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: Date.now() });
 });
 
 // ---------------------
@@ -150,17 +150,12 @@ app.use("/api/v1/payments", paymentRoutes);
 // GLOBAL ERROR HANDLER
 // ---------------------
 app.use((err, req, res, next) => {
-  console.error("🔥 Global Error Caught:", err);
-
-  // Handle CORS errors cleanly
-  if (err.message && err.message.startsWith('CORS policy')) {
-    return res.status(403).json({ success: false, message: err.message });
-  }
-
-  // Always return clean JSON for API errors
-  res.status(err.status || 500).json({
-    error: err.message || "Internal Server Error",
-    status: err.status || 500,
+  console.error(err.stack);
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 

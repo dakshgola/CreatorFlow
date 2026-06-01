@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import AppError from "../utils/AppError.js";
 
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
@@ -24,23 +25,18 @@ const setCookies = (res, token) => {
  * REGISTER USER
  * POST /api/auth/register
  */
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required",
-      });
+      return next(new AppError("Name, email, and password are required", 400));
     }
 
     const userExists = await User.findOne({ email });
-    if (userExists)
-      return res.status(409).json({
-        success: false,
-        message: "Email already exists",
-      });
+    if (userExists) {
+      return next(new AppError("Email already exists", 409));
+    }
 
     // Use constructor + save (avoids next() hook issues)
     const user = new User({ name, email, password });
@@ -65,12 +61,7 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("REGISTER ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error during registration",
-    });
+    next(error);
   }
 };
 
@@ -78,33 +69,26 @@ export const register = async (req, res) => {
  * LOGIN USER
  * POST /api/auth/login
  */
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide email and password",
-      });
+      return next(new AppError("Please provide email and password", 400));
     }
 
     // Select password manually (since model hides it)
     const user = await User.findOne({ email }).select("+password");
 
-    if (!user)
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+    if (!user) {
+      return next(new AppError("Invalid email or password", 401));
+    }
 
     const validPassword = await user.comparePassword(password);
 
-    if (!validPassword)
-      return res.status(401).json({
-        success: false,
-        message: "Invalid email or password",
-      });
+    if (!validPassword) {
+      return next(new AppError("Invalid email or password", 401));
+    }
 
     const token = generateToken(user._id);
 
@@ -125,12 +109,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error during login",
-    });
+    next(error);
   }
 };
 
@@ -138,15 +117,13 @@ export const login = async (req, res) => {
  * GET LOGGED IN USER
  * GET /api/auth/me
  */
-export const getMe = async (req, res) => {
+export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
 
-    if (!user)
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
 
     return res.json({
       success: true,
@@ -159,12 +136,7 @@ export const getMe = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("GET USER ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error fetching user",
-    });
+    next(error);
   }
 };
 
@@ -172,19 +144,19 @@ export const getMe = async (req, res) => {
  * REFRESH TOKEN
  * POST /api/auth/refresh
  */
-export const refresh = async (req, res) => {
+export const refresh = async (req, res, next) => {
   try {
     const incomingRefreshToken = req.cookies.token;
     
     if (!incomingRefreshToken) {
-      return res.status(401).json({ success: false, message: "No token provided" });
+      return next(new AppError("No token provided", 401));
     }
 
     const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
     
     const user = await User.findById(decoded.id).select("+refreshToken");
     if (!user || user.refreshToken !== incomingRefreshToken) {
-      return res.status(401).json({ success: false, message: "Invalid token" });
+      return next(new AppError("Invalid token", 401));
     }
 
     const token = generateToken(user._id);
@@ -196,8 +168,7 @@ export const refresh = async (req, res) => {
 
     res.json({ success: true, message: "Token refreshed" });
   } catch (error) {
-    console.error("REFRESH ERROR:", error);
-    res.status(401).json({ success: false, message: "Invalid or expired token" });
+    next(new AppError("Invalid or expired token", 401));
   }
 };
 
@@ -205,7 +176,7 @@ export const refresh = async (req, res) => {
  * LOGOUT USER
  * POST /api/auth/logout
  */
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   try {
     const incomingRefreshToken = req.cookies.token;
     if (incomingRefreshToken) {
@@ -218,7 +189,6 @@ export const logout = async (req, res) => {
     res.clearCookie("token");
     return res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
-    console.error("LOGOUT ERROR:", error);
-    res.status(500).json({ success: false, message: "Server error during logout" });
+    next(error);
   }
 };

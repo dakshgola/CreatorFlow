@@ -93,14 +93,33 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen pb-12">
         <div className="saas-container py-8 animate-pulse">
-           <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
-           <div className="h-4 bg-gray-200 rounded w-1/3 mb-8"></div>
+           {/* Title & subtitle skeleton */}
+           <div className="h-8 bg-gray-200 rounded-lg w-1/4 mb-2"></div>
+           <div className="h-4 bg-gray-200 rounded-lg w-1/3 mb-8"></div>
+
+           {/* KPI Cards skeleton */}
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-             {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white border border-gray-100 rounded-xl shadow-sm"></div>)}
+             {[1, 2, 3, 4].map(i => (
+               <div key={i} className="card p-5 flex flex-col justify-between h-32 bg-gray-100/50 border border-gray-200 shadow-sm">
+                 <div className="flex justify-between items-center mb-4">
+                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                   <div className="w-6 h-6 bg-gray-200 rounded-full"></div>
+                 </div>
+                 <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+               </div>
+             ))}
            </div>
+
+           {/* Charts layout skeleton */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-             <div className="h-80 bg-white border border-gray-100 rounded-xl shadow-sm"></div>
-             <div className="h-80 bg-white border border-gray-100 rounded-xl shadow-sm"></div>
+             <div className="card p-6 h-80 bg-gray-100/50 flex flex-col justify-between border border-gray-200 shadow-sm">
+               <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+               <div className="flex-1 bg-gray-200 rounded-lg"></div>
+             </div>
+             <div className="card p-6 h-80 bg-gray-100/50 flex flex-col justify-between border border-gray-200 shadow-sm">
+               <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+               <div className="flex-1 bg-gray-200 rounded-lg"></div>
+             </div>
            </div>
         </div>
       </div>

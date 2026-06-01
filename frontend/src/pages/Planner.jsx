@@ -123,7 +123,7 @@ const Planner = () => {
       console.error("Failed to update card status", err);
       // Revert optimistic update locally
       setCards(originalCards);
-      toast.error("Failed to move card. Position restored.");
+      toast.error("Failed to move card. Please try again.");
     }
   };
 
@@ -211,7 +211,7 @@ const Planner = () => {
     } catch (err) {
       console.error("Failed to quick move", err);
       setCards(originalCards);
-      toast.error("Failed to move card. Position restored.");
+      toast.error("Failed to move card. Please try again.");
     }
   };
 

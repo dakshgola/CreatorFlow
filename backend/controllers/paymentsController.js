@@ -1,10 +1,11 @@
 import Payment from '../models/Payment.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * Get all payments for the authenticated user
  * GET /api/v1/payments
  */
-export const listPayments = async (req, res) => {
+export const listPayments = async (req, res, next) => {
   try {
     const payments = await Payment.find({ userId: req.user.id })
       .populate('clientId', 'name niche paymentRate')
@@ -16,11 +17,7 @@ export const listPayments = async (req, res) => {
       data: payments,
     });
   } catch (error) {
-    console.error('List payments error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching payments',
-    });
+    next(error);
   }
 };
 
@@ -28,15 +25,12 @@ export const listPayments = async (req, res) => {
  * Create a new payment record
  * POST /api/v1/payments
  */
-export const createPayment = async (req, res) => {
+export const createPayment = async (req, res, next) => {
   try {
     const { clientId, amount, dueDate, paid } = req.body;
 
     if (!clientId || !amount || !dueDate) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide clientId, amount, and dueDate',
-      });
+      return next(new AppError('Please provide clientId, amount, and dueDate', 400));
     }
 
     const payment = await Payment.create({
@@ -56,18 +50,11 @@ export const createPayment = async (req, res) => {
       data: populated,
     });
   } catch (error) {
-    console.error('Create payment error:', error);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while creating payment record',
-    });
+    next(error);
   }
 };
 
@@ -75,7 +62,7 @@ export const createPayment = async (req, res) => {
  * Update a payment record
  * PUT /api/v1/payments/:id
  */
-export const updatePayment = async (req, res) => {
+export const updatePayment = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { clientId, amount, dueDate, paid } = req.body;
@@ -83,10 +70,7 @@ export const updatePayment = async (req, res) => {
     let payment = await Payment.findOne({ _id: id, userId: req.user.id });
 
     if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: 'Payment record not found',
-      });
+      return next(new AppError('Payment record not found', 404));
     }
 
     if (clientId !== undefined) payment.clientId = clientId;
@@ -103,24 +87,14 @@ export const updatePayment = async (req, res) => {
       data: populated,
     });
   } catch (error) {
-    console.error('Update payment error:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid payment ID format',
-      });
+      return next(new AppError('Invalid payment ID format', 400));
     }
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: messages.join(', '),
-      });
+      return next(new AppError(messages.join(', '), 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating payment record',
-    });
+    next(error);
   }
 };
 
@@ -128,17 +102,14 @@ export const updatePayment = async (req, res) => {
  * Delete a payment record
  * DELETE /api/v1/payments/:id
  */
-export const deletePayment = async (req, res) => {
+export const deletePayment = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     const payment = await Payment.findOneAndDelete({ _id: id, userId: req.user.id });
 
     if (!payment) {
-      return res.status(404).json({
-        success: false,
-        message: 'Payment record not found',
-      });
+      return next(new AppError('Payment record not found', 404));
     }
 
     res.json({
@@ -147,16 +118,9 @@ export const deletePayment = async (req, res) => {
       data: {},
     });
   } catch (error) {
-    console.error('Delete payment error:', error);
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid payment ID format',
-      });
+      return next(new AppError('Invalid payment ID format', 400));
     }
-    res.status(500).json({
-      success: false,
-      message: 'Server error while deleting payment record',
-    });
+    next(error);
   }
 };

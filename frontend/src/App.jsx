@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 import useDarkMode from "./hooks/useDarkMode";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 
 // Pages
 import Login from "./pages/Login";
@@ -23,6 +24,12 @@ import Analytics from "./pages/Analytics";
 function App() {
   useDarkMode();
 
+  // Ping backend /health endpoint on app mount to wake up Render instances early
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+    fetch(`${apiUrl}/health`).catch(() => {});
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
@@ -33,13 +40,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected with SaaS Layout */}
+          {/* Protected with SaaS Layout and Error Boundaries */}
           <Route
             path="/"
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Dashboard />
+                  <ErrorBoundary>
+                    <Dashboard />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -50,7 +59,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Dashboard />
+                  <ErrorBoundary>
+                    <Dashboard />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -61,7 +72,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <AITools />
+                  <ErrorBoundary>
+                    <AITools />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -72,7 +85,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Clients />
+                  <ErrorBoundary>
+                    <Clients />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -83,7 +98,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Tasks />
+                  <ErrorBoundary>
+                    <Tasks />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -94,7 +111,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Planner />
+                  <ErrorBoundary>
+                    <Planner />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -105,7 +124,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Payments />
+                  <ErrorBoundary>
+                    <Payments />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -116,7 +137,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <History />
+                  <ErrorBoundary>
+                    <History />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -127,7 +150,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Analytics />
+                  <ErrorBoundary>
+                    <Analytics />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
@@ -138,7 +163,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <AppLayout>
-                  <Settings />
+                  <ErrorBoundary>
+                    <Settings />
+                  </ErrorBoundary>
                 </AppLayout>
               </ProtectedRoute>
             }
