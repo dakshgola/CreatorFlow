@@ -1,5 +1,7 @@
 # CreatorFlow
 
+![CI](https://github.com/dakshgola/CreatorFlow/actions/workflows/ci.yml/badge.svg)
+
 An intelligent, full-stack content management dashboard designed for digital creators to generate, score, organize, and analyze their multi-platform content.
 
 ---
