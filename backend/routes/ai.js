@@ -7,11 +7,29 @@ import {
   chooseTitle,
   runContentPipeline,
   scoreContent,
-  getTrendingHooks
+  getTrendingHooks,
+  generateContentIdeas,
+  generateCaptions,
+  generateScripts,
+  generateHooks,
+  handleChat,
+  updateBookmark,
+  generateDigest
 } from '../controllers/aiController.js';
 import { protect } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { generateSchema, abTitlesSchema, pipelineSchema, scoreSchema } from '../validators/aiValidator.js';
+import {
+  generateSchema,
+  abTitlesSchema,
+  pipelineSchema,
+  scoreSchema,
+  ideasSchema,
+  captionsSchema,
+  scriptsSchema,
+  hooksSchema,
+  chatSchema,
+  bookmarkSchema
+} from '../validators/aiValidator.js';
 
 const router = express.Router();
 
@@ -21,7 +39,7 @@ const aiLimiter = rateLimit({
   max: 20,
   keyGenerator: (req) => req.user?.id || req.ip,
   message: { success: false, message: "AI rate limit exceeded (20 requests per hour). Please upgrade or try again later." },
-  validate: { keyGenerator: false }
+  validate: { keyGeneratorIpFallback: false }
 });
 
 router.use(protect);
@@ -38,6 +56,48 @@ router.post('/generate', validate(generateSchema), generateContentV2);
  * @desc    Get last 5 content generations
  */
 router.get('/generate', getRecentGenerations);
+
+/**
+ * @route   POST /api/v1/ai/ideas
+ * @desc    Generate a list of content ideas
+ */
+router.post('/ideas', validate(ideasSchema), generateContentIdeas);
+
+/**
+ * @route   POST /api/v1/ai/captions
+ * @desc    Generate caption variations
+ */
+router.post('/captions', validate(captionsSchema), generateCaptions);
+
+/**
+ * @route   POST /api/v1/ai/scripts
+ * @desc    Generate short-form video script
+ */
+router.post('/scripts', validate(scriptsSchema), generateScripts);
+
+/**
+ * @route   POST /api/v1/ai/hooks
+ * @desc    Generate engaging hook variations
+ */
+router.post('/hooks', validate(hooksSchema), generateHooks);
+
+/**
+ * @route   POST /api/v1/ai/chat
+ * @desc    Multi-turn conversation helper
+ */
+router.post('/chat', validate(chatSchema), handleChat);
+
+/**
+ * @route   PATCH /api/v1/ai/:id
+ * @desc    Update bookmarked status
+ */
+router.patch('/:id', validate(bookmarkSchema), updateBookmark);
+
+/**
+ * @route   GET /api/v1/ai/digest
+ * @desc    Generate weekly personalized digest based on planner and history
+ */
+router.get('/digest', generateDigest);
 
 /**
  * @route   POST /api/v1/ai/ab-titles
@@ -70,3 +130,4 @@ router.post('/score', validate(scoreSchema), scoreContent);
 router.get('/trending-hooks', getTrendingHooks);
 
 export default router;
+

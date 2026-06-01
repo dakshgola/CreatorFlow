@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Trash2, ArrowRight, Sparkles, Plus } from "lucide-react";
+import { toast } from "react-hot-toast";
 import PageShell from "../components/PageShell";
 
 const STATUSES = ["Idea", "Script", "Shoot", "Edit", "Posted"];
@@ -98,6 +99,9 @@ const Planner = () => {
     const cardToMove = cards[sourceColumn].find((c) => c._id === cardId);
     if (!cardToMove) return;
 
+    // Backup state for optimistic rollback
+    const originalCards = JSON.parse(JSON.stringify(cards));
+
     // --- OPTIMISTIC UI UPDATE ---
     setCards((prev) => ({
       ...prev,
@@ -117,8 +121,9 @@ const Planner = () => {
       if (!res.ok) throw new Error("API failed");
     } catch (err) {
       console.error("Failed to update card status", err);
-      // Revert optimistic update on failure by re-fetching
-      fetchCards();
+      // Revert optimistic update locally
+      setCards(originalCards);
+      toast.error("Failed to move card. Position restored.");
     }
   };
 
@@ -185,6 +190,9 @@ const Planner = () => {
 
     const targetColumn = STATUSES[currentIndex + 1];
 
+    // Backup state for optimistic rollback
+    const originalCards = JSON.parse(JSON.stringify(cards));
+
     // Optimistic Update
     setCards((prev) => ({
       ...prev,
@@ -193,14 +201,17 @@ const Planner = () => {
     }));
 
     try {
-      await fetch(`${API_URL}/${card._id}`, {
+      const res = await fetch(`${API_URL}/${card._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ status: targetColumn }),
       });
+      if (!res.ok) throw new Error("API failed");
     } catch (err) {
-      fetchCards();
+      console.error("Failed to quick move", err);
+      setCards(originalCards);
+      toast.error("Failed to move card. Position restored.");
     }
   };
 
@@ -216,10 +227,11 @@ const Planner = () => {
     }));
 
     try {
-      await fetch(`${API_URL}/${cardId}`, {
+      const res = await fetch(`${API_URL}/${cardId}`, {
         method: "DELETE",
         credentials: "include",
       });
+      if (!res.ok) throw new Error("Delete failed");
     } catch (err) {
       console.error("Failed to delete", err);
       // Revert on failure
@@ -227,6 +239,7 @@ const Planner = () => {
         ...prev,
         [sourceColumn]: [...prev[sourceColumn], cardToDelete],
       }));
+      toast.error("Failed to delete card.");
     }
   };
 

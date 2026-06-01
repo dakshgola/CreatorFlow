@@ -28,6 +28,7 @@ const AITools = () => {
   const [results, setResults] = useState([]);
   const [generatorResult, setGeneratorResult] = useState(null);
   const [currentEndpoint, setCurrentEndpoint] = useState(null);
+  const [activeGeneration, setActiveGeneration] = useState(null);
 
   // =============================
   // Forms
@@ -70,6 +71,7 @@ const AITools = () => {
   const captionsApi = useApi("/api/ai/captions", { method: "POST", immediate: false });
 
   const projectsApi = useApi("/api/projects", { method: "POST", immediate: false });
+  const bookmarkApi = useApi("/api/ai", { method: "PATCH", immediate: false });
 
   // =============================
   // Current API
@@ -92,6 +94,26 @@ const AITools = () => {
   })();
 
   const loading = currentApi?.loading || false;
+
+  // =============================
+  // Bookmark Toggle
+  // =============================
+  const toggleBookmark = async (id, currentStatus) => {
+    const res = await bookmarkApi.callApi({
+      endpoint: `/api/ai/${id}`,
+      method: "PATCH",
+      body: { bookmarked: !currentStatus }
+    });
+    if (res.success) {
+      toast.success(!currentStatus ? "Bookmarked!" : "Removed bookmark");
+      historyApi.callApi();
+      if (activeGeneration && activeGeneration._id === id) {
+        setActiveGeneration(prev => ({ ...prev, bookmarked: !currentStatus }));
+      }
+    } else {
+      toast.error(res.error || "Failed to update bookmark");
+    }
+  };
 
   // =============================
   // Generate handler
@@ -190,18 +212,22 @@ const AITools = () => {
     if (!currentApi) return;
 
     if (currentApi.data?.success && currentApi.data.data) {
+      const genObj = currentApi.data.data;
+      setActiveGeneration(genObj);
+
       if (activeTab === "generator") {
-        setGeneratorResult(currentApi.data.data.result);
+        setGeneratorResult(genObj.result || genObj.output);
         toast.success("Generated successfully!");
-        historyApi.callApi(); // refresh history
+        historyApi.callApi();
         return;
       }
 
-      const raw = currentApi.data.data;
-      const formatted = Array.isArray(raw) ? raw : [raw];
+      const res = genObj.result || genObj.output;
+      const formatted = Array.isArray(res) ? res : [res];
 
       setResults(formatted);
       toast.success("Generated successfully!");
+      historyApi.callApi();
       return;
     }
 
@@ -306,14 +332,63 @@ const AITools = () => {
               <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Generations</h3>
               <div className="space-y-2">
                 {historyApi.data.data.map(item => (
-                  <button key={item._id} onClick={() => setGeneratorResult(item.result)} className="w-full text-left p-3 rounded-lg bg-gray-50 hover:bg-slate-800 border border-gray-100 transition">
-                    <p className="text-sm text-gray-900 font-medium truncate">{item.topic}</p>
-                    <div className="flex gap-2 mt-1">
-                      <span className="text-xs text-gray-500">{item.platform}</span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </button>
+                  <div key={item._id} className="w-full flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-slate-800/10 border border-gray-100 transition gap-2">
+                    <button
+                      onClick={() => {
+                        const res = item.result || item.output;
+                        if (item.type === "generator" || item.type === "other" || !item.type) {
+                          setGeneratorResult(res);
+                          setResults([]);
+                        } else {
+                          const formatted = Array.isArray(res) ? res : [res];
+                          setResults(formatted);
+                          setGeneratorResult(null);
+                        }
+                        setActiveGeneration(item);
+                        
+                        // Map type back to tab selection
+                        const tabMap = {
+                          content_idea: "ideas",
+                          hook: "hooks",
+                          script: "scripts",
+                          caption: "captions",
+                          other: "generator"
+                        };
+                        const targetTab = tabMap[item.type] || "generator";
+                        setActiveTab(targetTab);
+                        
+                        const endpointMap = {
+                          content_idea: "ideas",
+                          hook: "hooks",
+                          script: "scripts",
+                          caption: "captions"
+                        };
+                        setCurrentEndpoint(endpointMap[item.type] || null);
+                      }}
+                      className="flex-1 text-left"
+                    >
+                      <p className="text-sm text-gray-900 font-medium truncate">{item.topic}</p>
+                      <div className="flex gap-2 mt-1">
+                        <span className="text-xs text-gray-500 capitalize">{item.type === "other" || !item.type ? "generator" : item.type.replace('_', ' ')} ({item.platform})</span>
+                        <span className="text-xs text-gray-400">•</span>
+                        <span className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => toggleBookmark(item._id, item.bookmarked)}
+                      className={`p-1.5 rounded-lg border transition ${
+                        item.bookmarked 
+                          ? "text-yellow-500 bg-yellow-500/10 border-yellow-500/30" 
+                          : "text-gray-400 hover:text-yellow-500 bg-white hover:bg-yellow-500/10 border-gray-100 hover:border-yellow-500/30"
+                      }`}
+                      title={item.bookmarked ? "Remove Bookmark" : "Bookmark"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -543,6 +618,7 @@ const AITools = () => {
               onClick={() => {
                 setResults([]);
                 setGeneratorResult(null);
+                setActiveGeneration(null);
                 toast.success("Cleared results");
               }}
             >
@@ -563,7 +639,9 @@ const AITools = () => {
             onClick={() => {
               setActiveTab(tab);
               setResults([]);
+              setGeneratorResult(null);
               setCurrentEndpoint(null);
+              setActiveGeneration(null);
             }}
             className={`px-4 py-2 rounded-xl capitalize border transition ${
               activeTab === tab
@@ -591,9 +669,27 @@ const AITools = () => {
               </p>
             </div>
 
-            <span className="badge badge-indigo">
-              {results.length} items
-            </span>
+            <div className="flex items-center gap-2">
+              {activeGeneration && (
+                <button
+                  onClick={() => toggleBookmark(activeGeneration._id, activeGeneration.bookmarked)}
+                  className={`p-2 rounded-xl border transition flex items-center gap-1.5 text-xs font-semibold ${
+                    activeGeneration.bookmarked 
+                      ? "text-yellow-500 bg-yellow-500/10 border-yellow-500/30" 
+                      : "text-gray-600 hover:text-yellow-500 bg-white hover:bg-yellow-500/10 border-gray-100 hover:border-yellow-500/30"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                  {activeGeneration.bookmarked ? "Bookmarked" : "Bookmark"}
+                </button>
+              )}
+
+              <span className="badge badge-indigo">
+                {results.length || (generatorResult ? 1 : 0)} items
+              </span>
+            </div>
           </div>
 
           <div className="divider my-6" />

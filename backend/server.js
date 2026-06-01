@@ -178,12 +178,16 @@ app.use((req, res) => {
 // ---------------------
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`✅ MongoDB: Connected`);
-  console.log(`✅ Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
-  console.log(`✅ Cloudinary: ${process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured (optional)'}`);
-  console.log(`✅ Allowed CORS Origins: ${allowedOrigins.join(', ')} + *.vercel.app`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`📡 API available at http://localhost:${PORT}/api`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✅ MongoDB: Connected`);
+    console.log(`✅ Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
+    console.log(`✅ Cloudinary: ${process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME ? 'Configured' : 'Not configured (optional)'}`);
+    console.log(`✅ Allowed CORS Origins: ${allowedOrigins.join(', ')} + *.vercel.app`);
+  });
+}
+
+export default app;

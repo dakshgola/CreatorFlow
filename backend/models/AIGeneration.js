@@ -9,14 +9,37 @@ const aiGenerationSchema = new mongoose.Schema({
   topic: String,
   type: {
     type: String,
-    enum: ['script', 'hook', 'caption', 'ideas', 'other'],
+    enum: ['content_idea', 'caption', 'performance_score', 'chat', 'script', 'hook', 'ideas', 'other'],
     default: 'other'
   },
   platform: String,
-  output: {
+  prompt: {
+    type: String,
+  },
+  result: {
     type: mongoose.Schema.Types.Mixed,
     required: true,
   },
+  output: {
+    type: mongoose.Schema.Types.Mixed,
+  },
+  bookmarked: {
+    type: Boolean,
+    default: false,
+  },
+  conversationHistory: [
+    {
+      role: {
+        type: String,
+        enum: ['user', 'model'],
+        required: true,
+      },
+      content: {
+        type: String,
+        required: true,
+      }
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

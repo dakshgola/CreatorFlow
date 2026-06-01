@@ -28,3 +28,49 @@ export const pipelineSchema = z.object({
     script: z.string().min(10, "Script is required")
   })
 });
+
+export const ideasSchema = z.object({
+  body: z.object({
+    prompt: z.string().optional(),
+    niche: z.string().min(1, "Niche is required"),
+    count: z.number().optional()
+  })
+});
+
+export const captionsSchema = z.object({
+  body: z.object({
+    topic: z.string().min(1, "Topic is required"),
+    tone: z.string().optional(),
+    count: z.number().optional()
+  })
+});
+
+export const scriptsSchema = z.object({
+  body: z.object({
+    topic: z.string().min(1, "Topic is required"),
+    length: z.string().optional()
+  })
+});
+
+export const hooksSchema = z.object({
+  body: z.object({
+    topic: z.string().min(1, "Topic is required"),
+    count: z.number().optional()
+  })
+});
+
+export const chatSchema = z.object({
+  body: z.object({
+    message: z.string().min(1, "Message is required")
+  })
+});
+
+export const bookmarkSchema = z.object({
+  body: z.object({
+    bookmarked: z.boolean({ required_error: "bookmarked field is required" })
+  }),
+  params: z.object({
+    id: z.string().min(1, "ID parameter is required")
+  })
+});
+
