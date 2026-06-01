@@ -1,6 +1,6 @@
 # CreatorFlow
 
-An intelligent, full-stack content management dashboard designed for digital creators.
+An intelligent, full-stack content management dashboard designed for digital creators to generate, score, organize, and analyze their multi-platform content.
 
 ---
 
@@ -31,10 +31,11 @@ An intelligent, full-stack content management dashboard designed for digital cre
 
 | Layer | Technologies | Purpose |
 | :--- | :--- | :--- |
-| **Frontend** | React (Vite), React Router DOM, Tailwind CSS | Single Page Application framework, routing, and styling |
+| **Frontend** | React (Vite), React Router DOM, Tailwind CSS, TypeScript (partial) | Single Page Application framework, routing, styling, and typed utility hooks |
 | **Backend** | Node.js, Express.js | REST API server |
 | **Database** | MongoDB, Mongoose | NoSQL persistence and data schemas |
-| **AI / LLM** | Google Gemini API (`gemini-2.5-flash`) | Content generation, scoring, and analysis |
+| **AI / LLM** | Google Gemini API (`gemini-2.5-flash`) | Content generation, scoring, chat context, and weekly digests |
+| **Testing** | Vitest, Supertest | Unit and endpoint integration testing suite |
 | **Media Store** | Multer, Cloudinary | Buffer-based file uploading and CDN hosting |
 | **Deployment** | Vercel (Frontend), Render (Backend) | Multi-cloud hosting architecture |
 
@@ -42,35 +43,39 @@ An intelligent, full-stack content management dashboard designed for digital cre
 
 ## Implemented Features (Currently Working)
 
-### 1. Cookie-Based Authentication
+### 1. Secure Cookie-Based Authentication
 * **Strict Cookie Security**: The system uses `httpOnly` secure cookies to store access and refresh tokens, mitigating Cross-Site Scripting (XSS) attacks. Access tokens expire in 15 minutes, and refresh tokens expire in 7 days (and are tracked in the database).
 * **Endpoints**: Supported flows include `/register` (POST), `/login` (POST), `/logout` (POST/DELETE), `/refresh` (POST), and `/me` (GET/PUT).
 
 ### 2. Kanban Board Content Planner
 * **Native Drag & Drop**: Uses browser-native HTML5 Drag and Drop events (`onDragStart`, `onDragOver`, `onDrop`) for custom planner board manipulation.
-* **Optimistic Updates**: Moves cards instantly on the client side, then syncs state to the database via PATCH. Reverts to previous state on server/network failures.
+* **Optimistic Updates & Local Rollback**: Moves cards instantly on the client side, then syncs state to the database via PATCH. If the server or network request fails, the client board immediately rolls back to its exact pre-drag state and raises a Toast notification.
 * **Columns**: Planner cards move through `Idea` → `Script` → `Shoot` → `Edit` → `Posted` states.
 
 ### 3. Integrated Google Gemini Generative Suite
 * **Content Generator (`/ai/generate`)**: Accepts `topic` and `platform` inputs, fetches the creator's saved profile context, and generates content.
+* **Granular Generator Tabs**: Dedicated tabs on the AI Tools page make direct API calls to:
+  - `POST /api/v1/ai/ideas`: Generates content ideas based on niche and prompt parameters.
+  - `POST /api/v1/ai/captions`: Generates caption variations for social networks.
+  - `POST /api/v1/ai/scripts`: Generates ready-to-shoot short-form video scripts.
+  - `POST /api/v1/ai/hooks`: Generates scroll-stopping hook ideas.
 * **A/B Title Tester (`/ai/ab-titles`)**: Generates 5 click-worthy titles for a topic based on winning past title history, saving the selected winner.
 * **Multi-Platform Pipeline (`/ai/pipeline`)**: Takes a script and generates parallel copy for Reels, LinkedIn, Twitter threads, and Email newsletters.
 * **Content Scorer (`/ai/score`)**: Scores scripts out of 10 across hook strength, clarity, and retention, offering automated fix suggestions.
 * **Reddit Ingest Hook Generator (`/ai/trending-hooks`)**: Scrapes top posts from a niche subreddit, caches them in-memory, and generates hooks from those discussions.
+* **AI Chat Assistant (`/api/v1/ai/chat`)**: Context-aware multi-turn creative partner. Retrieves the last 10 messages from the database as chat history to maintain conversational context.
+* **AI Weekly Digest (`/api/v1/ai/digest`)**: Generates a weekly briefing modal on the dashboard summarizing recent planner cards and content history.
+* **Star Bookmarking (`/api/v1/ai/:id`)**: PATCH endpoint allows bookmarking/saving individual items from both the output view and the recent generations panel.
 
 ### 4. Background Creator Analytics
-* **Daily Simulator**: Background script simulates YouTube views, subscriber increases, and watch hours, triggering a Gemini evaluation to upsert a dynamic "Daily Creator Insight" into the database.
-
-### 5. Media Uploader
-* **Direct Buffering**: Accepts file uploads in memory via Multer and forwards them to Cloudinary CDN, persisting the image link to MongoDB.
+* **Daily Ingestion**: Background script simulates YouTube views, subscriber increases, and watch hours, triggering a Gemini evaluation to upsert a dynamic "Daily Creator Insight" into the database.
+* **Recharts Dashboard**: Displays view and subscriber trends over the last 30 days and renders the dynamic AI briefing.
 
 ---
 
 ## Partial & Client-Side Mock Features
 
 * **Brand CRM, Tasks & Payments Pages**: The Mongoose models (`Client.js`, `Project.js`, `Task.js`, `Payment.js`) and REST controllers exist on the backend, but the frontend pages (`Clients.jsx`, `Tasks.jsx`, `Payments.jsx`) are currently operated as mock clients using local React state.
-* **Granular AI Tabs (Ideas, Hooks, Scripts, Captions)**: The individual generator tabs on the AI Tools page make GET/POST calls to unimplemented server-side mock endpoints (`/api/ai/ideas`, `/api/ai/hooks`, etc.), resulting in 404 responses. Currently, only the full "Generator" tab is connected.
-* **AI Weekly Digest Modal**: The modal on the Dashboard makes requests to a non-existent `/api/ai/digest` endpoint (404), which is not yet wired.
 
 ---
 
@@ -105,6 +110,10 @@ An intelligent, full-stack content management dashboard designed for digital cre
    ```bash
    npm run dev
    ```
+5. Run the test suite:
+   ```bash
+   npm test
+   ```
 
 ### 2. Set Up the Frontend
 1. Navigate to the frontend directory:
@@ -131,16 +140,21 @@ All routes are versioned and require authentication (verified via `jwt` cookie) 
 | :--- | :--- | :---: | :--- |
 | **POST** | `/api/v1/auth/register` | No | Creates a new user account, issues JWT cookies |
 | **POST** | `/api/v1/auth/login` | No | Authenticates user, returns user profile, sets JWT cookies |
-| **POST** | `/api/v1/auth/refresh` | No | Verifies refresh cookie, issues new access token cookie |
 | **POST/DELETE** | `/api/v1/auth/logout` | Yes | Unsets access/refresh cookies, revokes DB refresh token |
 | **GET** | `/api/v1/auth/me` | Yes | Returns authenticated user profile |
-| **PUT** | `/api/v1/auth/me` | Yes | Updates name, email, or theme preferences |
 | **GET** | `/api/v1/planner` | Yes | Gets all planner cards, grouped by column status |
 | **POST** | `/api/v1/planner` | Yes | Creates a new planner card |
 | **PATCH** | `/api/v1/planner/:id` | Yes | Updates card fields (used for drag-and-drop column move) |
 | **DELETE** | `/api/v1/planner/:id` | Yes | Deletes planner card |
 | **POST** | `/api/v1/ai/generate` | Yes | Runs prompt through Gemini model, saves to content history |
 | **GET** | `/api/v1/ai/generate` | Yes | Fetches the last 5 generations |
+| **POST** | `/api/v1/ai/ideas` | Yes | Generates a list of content ideas |
+| **POST** | `/api/v1/ai/captions` | Yes | Generates caption variations |
+| **POST** | `/api/v1/ai/scripts` | Yes | Generates a short-form video script |
+| **POST** | `/api/v1/ai/hooks` | Yes | Generates viral hooks |
+| **POST** | `/api/v1/ai/chat` | Yes | Context-aware multi-turn conversational creative partner |
+| **PATCH** | `/api/v1/ai/:id` | Yes | Updates bookmark status of an AI generation |
+| **GET** | `/api/v1/ai/digest` | Yes | Generates weekly digest from planner cards and history |
 | **POST** | `/api/v1/ai/ab-titles` | Yes | Generates 5 title variations based on winning titles |
 | **POST** | `/api/v1/ai/ab-titles/:sessionId/choose` | Yes | Chooses the winning title in A/B test |
 | **POST** | `/api/v1/ai/pipeline` | Yes | Transforms a single script into Reels, LinkedIn, Twitter, and newsletter formats |
@@ -169,18 +183,24 @@ All routes are versioned and require authentication (verified via `jwt` cookie) 
 ## Engineering Decisions
 
 ### 1. HTTPOnly Cookie-Based Auth Over LocalStorage JWT
-Portfolio apps often store JWTs in local storage because it is simple to implement. However, this exposes tokens to Cross-Site Scripting (XSS) scripts. I structured the authentication pipeline to set two secure cookies: a short-lived access token (`jwt`) and a long-lived database-tracked `refreshToken`. These are set as `httpOnly`, `sameSite: 'strict'`, and `secure` (in production). Since the browser attaches cookies automatically, client-side code does not need access to the token string, eliminating token extraction vectors.
+Portfolio apps often store JWTs in local storage because it is simple to implement. However, this exposes tokens to Cross-Site Scripting (XSS) scripts. We structured the authentication pipeline to set secure cookies (`token`) containing a JWT signed with `JWT_SECRET`. These are configured as `httpOnly`, `sameSite: 'strict'`, and `secure` (in production). Since the browser attaches cookies automatically, client-side code does not need access to the token string, eliminating token extraction vectors.
 
 ### 2. Native HTML5 Drag and Drop Over Heavy Libraries
-To build the Kanban board, I used browser-native Drag and Drop events (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) instead of adding heavy libraries like `react-beautiful-dnd` or `@dnd-kit`. This keeps the client bundle lightweight and gives complete control over react re-rendering cycles. State is updated optimistically on drop and rolled back locally to pre-drag state if the server API PATCH fails.
+To build the Kanban board, we used browser-native Drag and Drop events (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) instead of adding heavy libraries like `react-beautiful-dnd` or `@dnd-kit`. This keeps the client bundle lightweight and gives complete control over react re-rendering cycles. State is updated optimistically on drop, backed up by deep cloning the planner state object, and rolled back locally to the pre-drag coordinates if the server API PATCH fails.
 
 ### 3. Gemini 2.5 Flash Over OpenAI GPT Models
-I selected Google's `gemini-2.5-flash` model for generative text capabilities. The Flash model has high inference speeds, low latency, and is cost-competitive. Crucially, the Gemini SDK has native support for structured JSON returns via `responseMimeType: "application/json"`, which allows clean, validation-safe generation of arrays (like A/B titles and hooks) and structured content packages without brittle string regex manipulation.
+We selected Google's `gemini-2.5-flash` model for generative text capabilities. The Flash model has high inference speeds, low latency, and is cost-competitive. Crucially, the Gemini SDK has native support for structured JSON returns via `responseMimeType: "application/json"`, which allows clean, validation-safe generation of arrays (like A/B titles and hooks) and structured content packages without brittle string regex manipulation.
+
+### 4. Gradual TypeScript Integration
+To establish codebase scalability, we set up TypeScript compilation via a root `tsconfig.json` in the frontend and migrated key utility hooks (`useDarkMode` and `useApi`) to `.ts` coordinates. By declaring strict type contracts for generic API request/response structures, we ensure frontend state updates are fully typed while leaving layouts to be migrated progressively.
+
+### 5. Automated Endpoint Testing with Vitest
+Instead of verifying routing logic manually with Postman, we installed Vitest and Supertest in the backend. We mocked out structural modules (database connection pings, Google Generative AI, Sentry logging) and wrote integration tests mapping validation rules (such as validating niche strings or password lengths) and authentication states.
 
 ---
 
 ## Known Limitations & Roadmap
 
-* **No TypeScript Support**: Currently, both backend and frontend codebases are written in plain JavaScript. Future phases will introduce strict typings starting with the API services and hooks.
-* **No Unit/Integration Tests**: There is currently no test runner configured in the package files. Adding API route integration testing is on the immediate roadmap.
-* **Render Free Tier Cold Start**: Because the container is spun down after inactivity, the first request will take roughly 15 seconds to wake up the server. A frontend loader has been implemented to handle this UX gracefully.
+* **Partial TypeScript Coverage**: Only critical state management hooks (`useApi.ts`, `useDarkMode.ts`) are fully typed. Page layouts and contexts are currently plain JavaScript and will be converted systematically.
+* **Render Free Tier Cold Start**: Because the backend container is spun down after inactivity, the first request will take roughly 15 seconds to wake up the server. A frontend loader has been implemented to handle this UX gracefully.
+* **Mock Brand CRM Pages**: The Brand CRM (`/clients`), Tasks, and Payments page structures on the frontend operate in local React state and are not yet connected to their backend models.
