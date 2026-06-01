@@ -25,6 +25,8 @@ import competitorRoutes from "./routes/competitor.js";
 import creatorAnalyticsRoutes from "./routes/creatorAnalytics.js";
 import agentRoutes from "./routes/agent.js";
 import plannerRoutes from "./routes/planner.js";
+import taskRoutes from "./routes/tasks.js";
+import paymentRoutes from "./routes/payments.js";
 
 // Validate critical environment variables
 if (!process.env.MONGODB_URI) {
@@ -141,9 +143,8 @@ app.use("/api/v1/creator-analytics", creatorAnalyticsRoutes);
 app.use("/api/v1/agents", agentRoutes);
 app.use("/api/v1/planner", plannerRoutes);
 
-// ---- OPTIONAL (delete if unused) ----
-app.use("/api/v1/tasks", projectRoutes);
-app.use("/api/v1/payments", projectRoutes);
+app.use("/api/v1/tasks", taskRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 // ---------------------
 // GLOBAL ERROR HANDLER
