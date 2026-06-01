@@ -141,8 +141,39 @@ export const AuthProvider = ({ children }) => {
         fetchWithAuth,
       }}
     >
-      {/* ✅ Block render until auth is resolved — prevents flashing/redirect bugs */}
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-5 text-gray-100">
+          <div className="w-full max-w-md text-center space-y-6 animate-pop-in">
+            {/* Logo Container */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center font-extrabold text-white text-2xl shadow-lg shadow-indigo-500/30 animate-pulse">
+              CF
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold tracking-tight">Initializing CreatorFlow</h2>
+              <p className="text-sm text-gray-400">Waking up the server & verifying session...</p>
+            </div>
+
+            {/* Spinner and Status Indicator */}
+            <div className="flex justify-center py-2">
+              <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            
+            {/* Render Free Tier Info Box */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2">
+              <p className="text-xs text-indigo-300 font-medium">
+                ⏳ Note: CreatorFlow is hosted on Render's free tier. 
+              </p>
+              <p className="text-xs text-gray-400 leading-normal">
+                If the server is sleeping, waking it up can take 15 to 30 seconds. Thank you for your patience!
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 };

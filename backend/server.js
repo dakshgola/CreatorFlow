@@ -1,6 +1,6 @@
+import "./config/env.js"; // Initialize env variables first
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv-flow";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -26,9 +26,6 @@ import creatorAnalyticsRoutes from "./routes/creatorAnalytics.js";
 import agentRoutes from "./routes/agent.js";
 import plannerRoutes from "./routes/planner.js";
 
-// Load environment variables FIRST (dotenv-flow supports .env, .env.development, etc.)
-dotenv.config();
-
 // Validate critical environment variables
 if (!process.env.MONGODB_URI) {
   console.error('❌ MONGODB_URI is required but not set in .env');
@@ -44,6 +41,9 @@ if (!process.env.JWT_SECRET) {
 connectDB();
 
 const app = express();
+
+// Trust proxy for correct rate limiting behind Vercel/Render reverse proxies
+app.set("trust proxy", 1);
 
 // Initialize Sentry early
 Sentry.init({
@@ -67,8 +67,8 @@ app.use(cookieParser());
 
 // Allowed origins list (Strict CORS)
 const allowedOrigins = process.env.NODE_ENV === "production" 
-  ? [process.env.CLIENT_URL || "https://creator-flow-livid.vercel.app"]
-  : ["http://localhost:5173", "http://localhost:3000"];
+  ? [process.env.FRONTEND_URL || process.env.CLIENT_URL || "https://creator-flow-livid.vercel.app"]
+  : [process.env.FRONTEND_URL || "http://localhost:5173", "http://localhost:3000"];
 
 app.use(
   cors({
@@ -99,12 +99,12 @@ const generalLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 requests per 15 min
-  message: { success: false, message: "Too many auth attempts from this IP, please try again later" }
+  message: "Too many auth attempts"
 });
 
 // Note: AI routes get strict limits in the router directly (per userId), but we apply general limits here
 app.use("/api/", generalLimiter);
-app.use("/api/v1/auth", authLimiter);
+app.use("/api/v1/auth/", authLimiter);
 
 // ---------------------
 // HEALTH CHECK ROUTES

@@ -9,12 +9,9 @@ export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Check for token in cookies
-    if (req.cookies && req.cookies.jwt) {
-      token = req.cookies.jwt;
-    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      // Fallback for transition / testing
-      token = req.headers.authorization.split(' ')[1];
+    // Check for token strictly in cookies
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
     // If no token found
@@ -79,10 +76,8 @@ export const optionalAuth = async (req, res, next) => {
   try {
     let token;
 
-    if (req.cookies && req.cookies.jwt) {
-      token = req.cookies.jwt;
-    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
     if (token) {

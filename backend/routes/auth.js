@@ -42,10 +42,12 @@ router.post("/refresh", refresh);
 
 /**
  * @route   POST /api/auth/logout
+ * @route   DELETE /api/auth/logout
  * @desc    Logout user and clear cookies
  * @access  Public
  */
 router.post("/logout", logout);
+router.delete("/logout", logout);
 
 /**
  * @route   GET /api/auth/me

@@ -1,155 +1,186 @@
 # CreatorFlow
 
-> An intelligent, full-stack content management and analytics dashboard designed specifically for digital creators. 
-
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](#)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](#)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](#)
-[![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)](#)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](#)
-
-[**Live Demo**](https://creator-flow-livid.vercel.app/) • [**API Documentation**](#api-endpoints) • [**Architecture**](#architecture)
+An intelligent, full-stack content management dashboard designed for digital creators.
 
 ---
 
-## What Makes This Different
-Many portfolio dashboards use mocked data and insecure authentication practices. CreatorFlow was built with production-grade engineering principles in mind:
-- **Real Aggregation Pipelines**: Analytics are not hardcoded. The dashboard queries MongoDB using complex aggregation pipelines to generate real-time metrics.
-- **Secure Authentication**: Transitions away from the standard (and vulnerable) `localStorage` JWT pattern, utilizing strict `httpOnly` cookies to mitigate XSS attacks.
-- **Zero-Dependency Implementations**: Core interactive features, such as the Kanban board, were built using native browser APIs (HTML5 Drag and Drop) rather than relying on heavy third-party libraries.
-- **Integrated Generative AI**: Utilizes the Google Gemini API to actually generate usable content ideas, captions, and performance scores, persisting the results to the database for historical tracking.
+## Live Demo & Wake-Up Note
 
-## Core Features
+* **Live Demo URL**: [https://creator-flow-livid.vercel.app/](https://creator-flow-livid.vercel.app/)
+* **Note on Render Free Tier**: The backend is hosted on Render's free tier. If the application has been idle, the initial page load or login check may take 15 to 30 seconds to wake up the backend server container.
 
-### 🔐 Secure Authentication & User Management
-Full JWT-based authentication system utilizing secure, `httpOnly`, and `SameSite=Strict` cookies. Includes user registration, login, session persistence, and secure logout mechanisms.
-
-### 🤖 Generative AI Suite
-Integration with Google's `gemini-1.5-flash` model. Features a Content Idea Generator, Caption Writer, and Content Performance Scorer. All AI outputs are saved to the database with bookmarking and deletion capabilities.
-
-### 📊 Real-Time Analytics Dashboard
-A comprehensive data visualization suite built with Recharts, driven by real MongoDB aggregation queries calculating historical trends, content performance, and platform metrics.
-
-### 📋 Drag-and-Drop Content Planner
-A custom-built Kanban board using native HTML5 Drag and Drop APIs. Allows creators to seamlessly move content ideas through a pipeline (Idea → Script → Shoot → Edit → Posted) with optimistic UI updates.
-
-### 💼 Agency Operations 
-Complete interfaces for client management, task tracking, and payment processing, tailored for freelance creators scaling into agencies.
-
-## Architecture
-
-```text
-[ Client / Browser ]
-        │
-        ▼ (HTTPS / REST API)
-        │
-[ Vercel Frontend ] ── (React / Vite / Tailwind)
-        │
-        ▼ (Cookies / JSON)
-        │
-[ Render Backend ] ── (Node.js / Express / Mongoose)
-        │
-   ┌────┴────┐
-   ▼         ▼
-[ MongoDB ] [ Google Gemini API ]
-(Database)  (LLM processing)
-```
-
-## Tech Stack
-
-| Domain | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Frontend** | React (Vite), React Router DOM | Core UI and SPA routing |
-| **Styling** | Tailwind CSS, Recharts | Utility-first styling and data visualization |
-| **Backend** | Node.js, Express.js | REST API and server logic |
-| **Database** | MongoDB, Mongoose | NoSQL data persistence and ORM |
-| **Authentication**| JWT, Cookie-Parser | Stateless, cookie-based session management |
-| **AI / LLM** | Google Gemini API | Content generation and analysis |
-| **Deployment** | Vercel, Render | Edge hosting and continuous integration |
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v18+)
-- MongoDB instance (local or Atlas)
-- Google Gemini API Key
-
-### Local Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/creatorflow.git
-   cd creatorflow
-   ```
-
-2. **Setup the Backend**
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-
-3. **Setup the Frontend**
-   ```bash
-   cd ../frontend
-   npm install
-   npm run dev
-   ```
-
-## Environment Variables
-
-Create a `.env` file in the `/backend` directory.
-
-```env
-# Server
-PORT=5000
-NODE_ENV=development
-
-# Database
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/creatorflow
-
-# Authentication
-JWT_SECRET=your_super_secret_jwt_key
-JWT_REFRESH_SECRET=your_super_secret_refresh_key
-
-# AI Integration
-GEMINI_API_KEY=your_google_gemini_api_key
-
-# CORS
-FRONTEND_URL=http://localhost:5173
-```
-
-## API Endpoints
-
-| Method | Endpoint | Auth Required | Description |
-| :--- | :--- | :---: | :--- |
-| **POST** | `/api/v1/auth/register` | No | Register a new user |
-| **POST** | `/api/v1/auth/login` | No | Authenticate user and issue `httpOnly` cookie |
-| **POST** | `/api/v1/auth/logout` | Yes | Clear authentication cookies |
-| **GET** | `/api/v1/auth/me` | Yes | Retrieve current authenticated user profile |
-| **GET** | `/api/v1/planner` | Yes | Retrieve all Kanban cards, grouped by status |
-| **POST** | `/api/v1/planner` | Yes | Create a new content card |
-| **PATCH**| `/api/v1/planner/:id` | Yes | Update card status (trigger drag-and-drop move) |
-| **DELETE**| `/api/v1/planner/:id` | Yes | Remove a card from the board |
-| **POST** | `/api/v1/ai/generate` | Yes | Dispatch prompt to Gemini API and save response |
+---
 
 ## Screenshots
 
-*(Insert screenshots of the dashboard, Kanban board, and AI tools here)*
+* **Creator Analytics Dashboard**
+  ![Dashboard View](/screenshots/dashboard.png)
 
-* Dashboard View: `[Screenshot 1]`
-* Kanban Content Planner: `[Screenshot 2]`
-* AI Generation Suite: `[Screenshot 3]`
+* **Kanban Content Planner**
+  ![Kanban Content Planner](/screenshots/kanban.png)
 
-## Engineering Decisions & Learnings
+* **AI Generation Suite**
+  ![AI Generation Suite](/screenshots/ai_tools.png)
 
-Building CreatorFlow required making specific architectural choices to ensure performance, security, and maintainability.
+* **Saved Content History**
+  ![Saved Content History](/screenshots/analytics.png)
 
-### 1. Security: `httpOnly` Cookies over `localStorage`
-Initially, the project utilized standard JWT authentication by storing tokens in the browser's `localStorage`. However, `localStorage` is accessible via JavaScript, leaving the application vulnerable to Cross-Site Scripting (XSS) attacks. I refactored the entire authentication flow to attach JWTs to strict, `httpOnly` secure cookies. This ensures tokens are automatically sent with API requests but remain completely inaccessible to client-side scripts, significantly improving the security posture of the app.
+---
 
-### 2. UI Engineering: HTML5 Drag & Drop vs. Third-Party Libraries
-For the Kanban board, it is standard practice to reach for libraries like `react-beautiful-dnd` or `@dnd-kit`. I chose to build the drag-and-drop system from scratch using the native HTML5 Drag and Drop API. This decision removed a heavy dependency, reduced the bundle size, and gave me a deep understanding of browser event lifecycles (`onDragStart`, `onDragOver`, `onDrop`), `dataTransfer` objects, and managing optimistic UI state updates in React.
+## Tech Stack
 
-### 3. AI Integration: Google Gemini Flash over OpenAI GPT
-While GPT-3.5/4 is the default choice for many AI wrappers, I opted for Google's `gemini-1.5-flash`. The Flash model provides an excellent balance of high inference speed and cost-effectiveness, which is critical for a dashboard where users expect instantaneous feedback for content ideas and caption generation. The official `@google/generative-ai` SDK was lightweight and straightforward to integrate into my Express controllers.
+| Layer | Technologies | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React (Vite), React Router DOM, Tailwind CSS | Single Page Application framework, routing, and styling |
+| **Backend** | Node.js, Express.js | REST API server |
+| **Database** | MongoDB, Mongoose | NoSQL persistence and data schemas |
+| **AI / LLM** | Google Gemini API (`gemini-2.5-flash`) | Content generation, scoring, and analysis |
+| **Media Store** | Multer, Cloudinary | Buffer-based file uploading and CDN hosting |
+| **Deployment** | Vercel (Frontend), Render (Backend) | Multi-cloud hosting architecture |
+
+---
+
+## Implemented Features (Currently Working)
+
+### 1. Cookie-Based Authentication
+* **Strict Cookie Security**: The system uses `httpOnly` secure cookies to store access and refresh tokens, mitigating Cross-Site Scripting (XSS) attacks. Access tokens expire in 15 minutes, and refresh tokens expire in 7 days (and are tracked in the database).
+* **Endpoints**: Supported flows include `/register` (POST), `/login` (POST), `/logout` (POST/DELETE), `/refresh` (POST), and `/me` (GET/PUT).
+
+### 2. Kanban Board Content Planner
+* **Native Drag & Drop**: Uses browser-native HTML5 Drag and Drop events (`onDragStart`, `onDragOver`, `onDrop`) for custom planner board manipulation.
+* **Optimistic Updates**: Moves cards instantly on the client side, then syncs state to the database via PATCH. Reverts to previous state on server/network failures.
+* **Columns**: Planner cards move through `Idea` → `Script` → `Shoot` → `Edit` → `Posted` states.
+
+### 3. Integrated Google Gemini Generative Suite
+* **Content Generator (`/ai/generate`)**: Accepts `topic` and `platform` inputs, fetches the creator's saved profile context, and generates content.
+* **A/B Title Tester (`/ai/ab-titles`)**: Generates 5 click-worthy titles for a topic based on winning past title history, saving the selected winner.
+* **Multi-Platform Pipeline (`/ai/pipeline`)**: Takes a script and generates parallel copy for Reels, LinkedIn, Twitter threads, and Email newsletters.
+* **Content Scorer (`/ai/score`)**: Scores scripts out of 10 across hook strength, clarity, and retention, offering automated fix suggestions.
+* **Reddit Ingest Hook Generator (`/ai/trending-hooks`)**: Scrapes top posts from a niche subreddit, caches them in-memory, and generates hooks from those discussions.
+
+### 4. Background Creator Analytics
+* **Daily Simulator**: Background script simulates YouTube views, subscriber increases, and watch hours, triggering a Gemini evaluation to upsert a dynamic "Daily Creator Insight" into the database.
+
+### 5. Media Uploader
+* **Direct Buffering**: Accepts file uploads in memory via Multer and forwards them to Cloudinary CDN, persisting the image link to MongoDB.
+
+---
+
+## Partial & Client-Side Mock Features
+
+* **Brand CRM, Tasks & Payments Pages**: The Mongoose models (`Client.js`, `Project.js`, `Task.js`, `Payment.js`) and REST controllers exist on the backend, but the frontend pages (`Clients.jsx`, `Tasks.jsx`, `Payments.jsx`) are currently operated as mock clients using local React state.
+* **Granular AI Tabs (Ideas, Hooks, Scripts, Captions)**: The individual generator tabs on the AI Tools page make GET/POST calls to unimplemented server-side mock endpoints (`/api/ai/ideas`, `/api/ai/hooks`, etc.), resulting in 404 responses. Currently, only the full "Generator" tab is connected.
+* **AI Weekly Digest Modal**: The modal on the Dashboard makes requests to a non-existent `/api/ai/digest` endpoint (404), which is not yet wired.
+
+---
+
+## Local Setup Instructions
+
+### Prerequisites
+- Node.js (v18+)
+- MongoDB Atlas account or local MongoDB instance
+
+### 1. Set Up the Backend
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file in `/backend` using the variables below:
+   ```env
+   PORT=5000
+   NODE_ENV=development
+   CLIENT_URL=http://localhost:5173
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/creatorflow
+   JWT_SECRET=your_super_secret_jwt_key
+   JWT_REFRESH_SECRET=your_super_secret_refresh_key
+   GEMINI_API_KEY=your_google_gemini_api_key
+   # Cloudinary config (optional, required for media upload page)
+   CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+   ```
+4. Start the server in development mode:
+   ```bash
+   npm run dev
+   ```
+
+### 2. Set Up the Frontend
+1. Navigate to the frontend directory:
+   ```bash
+   cd ../frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite dev server:
+   ```bash
+   npm run dev
+   ```
+4. Open your browser to the local URL (defaults to `http://localhost:5173`).
+
+---
+
+## API Endpoints Table
+
+All routes are versioned and require authentication (verified via `jwt` cookie) unless stated otherwise.
+
+| Method | Route | Auth Required | Description |
+| :--- | :--- | :---: | :--- |
+| **POST** | `/api/v1/auth/register` | No | Creates a new user account, issues JWT cookies |
+| **POST** | `/api/v1/auth/login` | No | Authenticates user, returns user profile, sets JWT cookies |
+| **POST** | `/api/v1/auth/refresh` | No | Verifies refresh cookie, issues new access token cookie |
+| **POST/DELETE** | `/api/v1/auth/logout` | Yes | Unsets access/refresh cookies, revokes DB refresh token |
+| **GET** | `/api/v1/auth/me` | Yes | Returns authenticated user profile |
+| **PUT** | `/api/v1/auth/me` | Yes | Updates name, email, or theme preferences |
+| **GET** | `/api/v1/planner` | Yes | Gets all planner cards, grouped by column status |
+| **POST** | `/api/v1/planner` | Yes | Creates a new planner card |
+| **PATCH** | `/api/v1/planner/:id` | Yes | Updates card fields (used for drag-and-drop column move) |
+| **DELETE** | `/api/v1/planner/:id` | Yes | Deletes planner card |
+| **POST** | `/api/v1/ai/generate` | Yes | Runs prompt through Gemini model, saves to content history |
+| **GET** | `/api/v1/ai/generate` | Yes | Fetches the last 5 generations |
+| **POST** | `/api/v1/ai/ab-titles` | Yes | Generates 5 title variations based on winning titles |
+| **POST** | `/api/v1/ai/ab-titles/:sessionId/choose` | Yes | Chooses the winning title in A/B test |
+| **POST** | `/api/v1/ai/pipeline` | Yes | Transforms a single script into Reels, LinkedIn, Twitter, and newsletter formats |
+| **POST** | `/api/v1/ai/score` | Yes | Scores text out of 10, returns retention analysis |
+| **GET** | `/api/v1/ai/trending-hooks` | Yes | Fetches current Reddit trends in niche and creates hooks |
+| **GET** | `/api/v1/creator-analytics` | Yes | Retrieves daily views/subscriber stats and AI insights |
+| **POST** | `/api/v1/creator-analytics/sync` | Yes | Manually triggers the mock YouTube analytics ingestion |
+| **GET** | `/api/v1/history` | Yes | Fetches content scoring/generation history (last 20 items) |
+| **GET** | `/api/v1/history/saved` | Yes | Fetches bookmarked content items |
+| **PATCH** | `/api/v1/history/:id/save` | Yes | Toggles bookmark status of a content history item |
+| **DELETE** | `/api/v1/history/:id` | Yes | Deletes content history item |
+| **GET** | `/api/v1/clients` | Yes | Retrieves brand client CRM list (not consumed by frontend) |
+| **POST** | `/api/v1/clients` | Yes | Creates brand client (not consumed by frontend) |
+| **PUT** | `/api/v1/clients/:id` | Yes | Updates brand client (not consumed by frontend) |
+| **DELETE** | `/api/v1/clients/:id` | Yes | Deletes brand client (not consumed by frontend) |
+| **GET** | `/api/v1/projects` | Yes | Retrieves user project campaigns |
+| **POST** | `/api/v1/projects` | Yes | Creates user project campaign |
+| **PUT** | `/api/v1/projects/:id` | Yes | Updates user project campaign |
+| **DELETE** | `/api/v1/projects/:id` | Yes | Deletes user project campaign |
+| **GET** | `/api/v1/media` | Yes | Retrieves user uploaded media list |
+| **POST** | `/api/v1/media/upload` | Yes | Uploads image to Cloudinary (binary buffer form data) |
+| **DELETE** | `/api/v1/media/:id` | Yes | Deletes media from Cloudinary and database |
+
+---
+
+## Engineering Decisions
+
+### 1. HTTPOnly Cookie-Based Auth Over LocalStorage JWT
+Portfolio apps often store JWTs in local storage because it is simple to implement. However, this exposes tokens to Cross-Site Scripting (XSS) scripts. I structured the authentication pipeline to set two secure cookies: a short-lived access token (`jwt`) and a long-lived database-tracked `refreshToken`. These are set as `httpOnly`, `sameSite: 'strict'`, and `secure` (in production). Since the browser attaches cookies automatically, client-side code does not need access to the token string, eliminating token extraction vectors.
+
+### 2. Native HTML5 Drag and Drop Over Heavy Libraries
+To build the Kanban board, I used browser-native Drag and Drop events (`draggable`, `onDragStart`, `onDragOver`, `onDrop`) instead of adding heavy libraries like `react-beautiful-dnd` or `@dnd-kit`. This keeps the client bundle lightweight and gives complete control over react re-rendering cycles. State is updated optimistically on drop and rolled back locally to pre-drag state if the server API PATCH fails.
+
+### 3. Gemini 2.5 Flash Over OpenAI GPT Models
+I selected Google's `gemini-2.5-flash` model for generative text capabilities. The Flash model has high inference speeds, low latency, and is cost-competitive. Crucially, the Gemini SDK has native support for structured JSON returns via `responseMimeType: "application/json"`, which allows clean, validation-safe generation of arrays (like A/B titles and hooks) and structured content packages without brittle string regex manipulation.
+
+---
+
+## Known Limitations & Roadmap
+
+* **No TypeScript Support**: Currently, both backend and frontend codebases are written in plain JavaScript. Future phases will introduce strict typings starting with the API services and hooks.
+* **No Unit/Integration Tests**: There is currently no test runner configured in the package files. Adding API route integration testing is on the immediate roadmap.
+* **Render Free Tier Cold Start**: Because the container is spun down after inactivity, the first request will take roughly 15 seconds to wake up the server. A frontend loader has been implemented to handle this UX gracefully.

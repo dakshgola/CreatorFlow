@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
 
 // ✅ FIXED: Use env variable — NOT hardcoded URL
-//    Local .env:           VITE_API_URL=http://localhost:5000/api
-//    Vercel env vars:      VITE_API_URL=https://creatorflow-i5ev.onrender.com/api
+//    Local .env:           VITE_API_URL=http://localhost:5000/api/v1
+//    Vercel env vars:      VITE_API_URL=https://creatorflow-i5ev.onrender.com/api/v1
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 /**
  * Custom API hook
- * - Handles authentication token attach (Bearer)
+ * - Handles authentication cookie attach (credentials: include)
  * - Handles JSON + text responses
  * - Handles errors properly
  */
@@ -25,20 +25,18 @@ const useApi = (endpoint, options = {}) => {
   const [loading, setLoading] = useState(immediate);
   const [error, setError] = useState(null);
 
-  /** ✅ Get token safely */
-  const getToken = () => localStorage.getItem("token");
-
-  /** ✅ Build full URL — avoids double /api prefix */
+  /** ✅ Build full URL — handles stripping API/API_v1 prefixes to prevent double paths */
   const buildUrl = (ep) => {
     if (!ep) return API_BASE_URL;
 
     // If endpoint is already a full URL, return as-is
     if (ep.startsWith("http://") || ep.startsWith("https://")) return ep;
 
-    // Strip leading /api from endpoint if API_BASE_URL already ends with /api
-    // This prevents double /api/api/... URLs
+    // Strip leading /api/v1 or /api from endpoint so it appends nicely to API_BASE_URL
     let cleanEndpoint = ep;
-    if (API_BASE_URL.endsWith("/api") && ep.startsWith("/api")) {
+    if (ep.startsWith("/api/v1")) {
+      cleanEndpoint = ep.replace(/^\/api\/v1/, "");
+    } else if (ep.startsWith("/api")) {
       cleanEndpoint = ep.replace(/^\/api/, "");
     }
 
@@ -51,8 +49,6 @@ const useApi = (endpoint, options = {}) => {
       const finalEndpoint = override.endpoint || endpoint;
       const finalMethod = (override.method || method).toUpperCase();
       const finalBody = override.body !== undefined ? override.body : body;
-      const finalAuth =
-        override.authRequired !== undefined ? override.authRequired : authRequired;
 
       setLoading(true);
       setError(null);
@@ -64,18 +60,14 @@ const useApi = (endpoint, options = {}) => {
           ...(override.headers || {}),
         };
 
-        // ✅ Auto-add token for protected routes
-        if (finalAuth) {
-          const token = getToken();
-          if (token) requestHeaders.Authorization = `Bearer ${token}`;
-        }
-
         const url = buildUrl(finalEndpoint);
         console.log("🔗 Calling API:", url);
 
+        // credentials: "include" sends httpOnly cookies automatically for request validation
         const res = await fetch(url, {
           method: finalMethod,
           headers: requestHeaders,
+          credentials: "include",
           body:
             ["POST", "PUT", "PATCH", "DELETE"].includes(finalMethod) && finalBody
               ? JSON.stringify(finalBody)
@@ -106,7 +98,7 @@ const useApi = (endpoint, options = {}) => {
         setLoading(false);
       }
     },
-    [endpoint, method, body, authRequired, headers]
+    [endpoint, method, body, headers]
   );
 
   useEffect(() => {

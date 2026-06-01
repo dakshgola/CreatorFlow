@@ -1,31 +1,23 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
-const generateTokens = (userId) => {
-  if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
-    throw new Error("JWT_SECRET or JWT_REFRESH_SECRET missing in .env file");
+const generateToken = (userId) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET missing in .env file");
   }
 
-  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: "15m", // Short lived access token
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d", // 7-day expiration
   });
-
-  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "7d", // Longer lived refresh token
-  });
-
-  return { accessToken, refreshToken };
 };
 
-const setCookies = (res, accessToken, refreshToken) => {
-  const cookieOptions = {
+const setCookies = (res, token) => {
+  res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-  };
-
-  res.cookie("jwt", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15m
-  res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); // 7d
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
 };
 
 /**
@@ -54,13 +46,13 @@ export const register = async (req, res) => {
     const user = new User({ name, email, password });
     await user.save();
 
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const token = generateToken(user._id);
 
-    // Save refresh token to user
-    user.refreshToken = refreshToken;
+    // Save refresh token field in database (kept for schema compatibility)
+    user.refreshToken = token;
     await user.save();
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, token);
 
     return res.status(201).json({
       success: true,
@@ -114,12 +106,12 @@ export const login = async (req, res) => {
         message: "Invalid email or password",
       });
 
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const token = generateToken(user._id);
 
-    user.refreshToken = refreshToken;
+    user.refreshToken = token;
     await user.save();
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, token);
 
     return res.json({
       success: true,
@@ -182,30 +174,30 @@ export const getMe = async (req, res) => {
  */
 export const refresh = async (req, res) => {
   try {
-    const incomingRefreshToken = req.cookies.refreshToken;
+    const incomingRefreshToken = req.cookies.token;
     
     if (!incomingRefreshToken) {
-      return res.status(401).json({ success: false, message: "No refresh token provided" });
+      return res.status(401).json({ success: false, message: "No token provided" });
     }
 
-    const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(incomingRefreshToken, process.env.JWT_SECRET);
     
     const user = await User.findById(decoded.id).select("+refreshToken");
     if (!user || user.refreshToken !== incomingRefreshToken) {
-      return res.status(401).json({ success: false, message: "Invalid refresh token" });
+      return res.status(401).json({ success: false, message: "Invalid token" });
     }
 
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const token = generateToken(user._id);
     
-    user.refreshToken = refreshToken;
+    user.refreshToken = token;
     await user.save();
 
-    setCookies(res, accessToken, refreshToken);
+    setCookies(res, token);
 
     res.json({ success: true, message: "Token refreshed" });
   } catch (error) {
     console.error("REFRESH ERROR:", error);
-    res.status(401).json({ success: false, message: "Invalid or expired refresh token" });
+    res.status(401).json({ success: false, message: "Invalid or expired token" });
   }
 };
 
@@ -215,7 +207,7 @@ export const refresh = async (req, res) => {
  */
 export const logout = async (req, res) => {
   try {
-    const incomingRefreshToken = req.cookies.refreshToken;
+    const incomingRefreshToken = req.cookies.token;
     if (incomingRefreshToken) {
       const decoded = jwt.decode(incomingRefreshToken);
       if (decoded && decoded.id) {
@@ -223,9 +215,8 @@ export const logout = async (req, res) => {
       }
     }
 
-    res.clearCookie("jwt");
-    res.clearCookie("refreshToken");
-    res.json({ success: true, message: "Logged out successfully" });
+    res.clearCookie("token");
+    return res.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     console.error("LOGOUT ERROR:", error);
     res.status(500).json({ success: false, message: "Server error during logout" });

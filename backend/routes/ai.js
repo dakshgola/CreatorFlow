@@ -20,7 +20,8 @@ const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 20,
   keyGenerator: (req) => req.user?.id || req.ip,
-  message: { success: false, message: "AI rate limit exceeded (20 requests per hour). Please upgrade or try again later." }
+  message: { success: false, message: "AI rate limit exceeded (20 requests per hour). Please upgrade or try again later." },
+  validate: { keyGenerator: false }
 });
 
 router.use(protect);

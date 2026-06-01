@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // ✅ FIXED: Use env variable consistently across all hooks
-//    Local .env:           VITE_API_URL=http://localhost:5000/api
-//    Vercel env vars:      VITE_API_URL=https://creatorflow-i5ev.onrender.com/api
+//    Local .env:           VITE_API_URL=http://localhost:5000/api/v1
+//    Vercel env vars:      VITE_API_URL=https://creatorflow-i5ev.onrender.com/api/v1
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 /**
  * Custom hook for fetching data from APIs
@@ -22,23 +22,6 @@ const API_BASE_URL =
  *   - loading: Boolean indicating if request is in progress
  *   - error: Error object if request failed (null if successful)
  *   - refetch: Function to manually trigger the fetch again
- *
- * @example
- * // Basic usage - fetch on mount
- * const { data, loading, error } = useFetch('/api/clients');
- *
- * @example
- * // With options - POST request
- * const { data, loading, error, refetch } = useFetch('/api/clients', {
- *   method: 'POST',
- *   headers: { 'Content-Type': 'application/json' },
- *   body: JSON.stringify({ name: 'John Doe' }),
- * });
- *
- * @example
- * // Lazy fetch - don't fetch on mount
- * const { data, loading, error, refetch } = useFetch('/api/clients', {}, false);
- * <button onClick={refetch}>Load Clients</button>
  */
 const useFetch = (url, options = {}, immediate = true) => {
   const [data, setData] = useState(null);
@@ -62,10 +45,11 @@ const useFetch = (url, options = {}, immediate = true) => {
       return rawUrl;
     }
 
-    // Strip leading /api from endpoint if API_BASE_URL already ends with /api
-    // Prevents double /api/api/... URLs
+    // Strip leading /api/v1 or /api from endpoint so it appends nicely to API_BASE_URL
     let cleanUrl = rawUrl;
-    if (API_BASE_URL.endsWith('/api') && rawUrl.startsWith('/api')) {
+    if (rawUrl.startsWith('/api/v1')) {
+      cleanUrl = rawUrl.replace(/^\/api\/v1/, '');
+    } else if (rawUrl.startsWith('/api')) {
       cleanUrl = rawUrl.replace(/^\/api/, '');
     }
 
@@ -73,7 +57,7 @@ const useFetch = (url, options = {}, immediate = true) => {
   };
 
   /**
-   * ✅ FIXED: Fetches data with auth token attached automatically
+   * ✅ FIXED: Fetches data with credentials (cookies) attached automatically
    */
   const fetchData = useCallback(async () => {
     if (!url) {
@@ -85,17 +69,13 @@ const useFetch = (url, options = {}, immediate = true) => {
     setError(null);
 
     try {
-      // ✅ Auto-attach Bearer token if present in localStorage
-      const token = localStorage.getItem('token');
-      const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
-
       const fullUrl = buildUrl(url);
 
       const response = await fetch(fullUrl, {
         ...optionsRef.current,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeader,               // ✅ Token injected here
           ...optionsRef.current.headers,
         },
       });
